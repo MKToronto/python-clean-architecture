@@ -55,11 +55,40 @@ Review the code at `$ARGUMENTS` (or the current working directory if no path giv
    - Replace parallel data structures with a single data class
    - Replace if/elif chains with dict mapping
 
-7. **Report findings** — Present results organized by severity:
+7. **Report findings** — Structure the output in this order:
+
+   ### Architecture Summary Diagram
+   Open with an ASCII diagram showing the actual dependency flow discovered in the project. Map real file/module names onto the three-layer model. Show which modules depend on which, and flag any arrows that violate the layer rules. Example format:
+
+   ```
+   Routers (API)          Operations (logic)      Database (persistence)
+   ─────────────          ──────────────────      ─────────────────────
+   routers/booking.py  →  operations/booking.py →  db/db_interface.py
+   routers/customer.py →  operations/customer.py    db/models.py
+                                                     db/database.py
+
+   ⚠ routers/admin.py → db/models.py  (layer skip — should go through operations)
+   ```
+
+   Adapt the diagram to the actual project structure. If the project does not follow the three-layer model, show the dependency flow as-is and note what a target architecture would look like.
+
+   ### What Works Well
+   Call out specific things the code does right. Reference files and patterns. Examples:
+   - Clean layer separation with no direct DB imports in routers
+   - Good use of Protocol-based DataInterface for dependency injection
+   - Consistent Pydantic model separation (Create vs Read)
+   - Effective use of dataclasses for value objects
+   - Pure functions in operations with side effects at boundaries
+   - Meaningful naming, good type hint coverage
+
+   This section builds trust and avoids a purely negative tone. Be specific — cite actual files and lines, not generic praise.
+
+   ### Findings by Severity
+   Present issues organized by severity:
    - **Critical** — Layer violations, missing abstractions, tight coupling to concrete DB
    - **Important** — Cohesion issues, Law of Demeter violations, missing type hints
    - **Suggestions** — Pattern improvements, naming, simplification opportunities, cleanup refactorings
 
-For each finding, reference the specific file and line, explain the principle violated, and show the recommended fix with a code snippet. Prioritize actionable cleanup suggestions over architectural observations.
+   For each finding, reference the specific file and line, explain the principle violated, and show the recommended fix with a code snippet. Prioritize actionable cleanup suggestions over architectural observations.
 
 Load `references/design-principles.md`, `references/code-quality.md`, `references/error-handling.md`, and `references/pythonic-patterns.md` from the clean-architecture skill for review checklists. For detailed pattern guidance (when explaining HOW to fix), consult the relevant files in `references/patterns/`.
