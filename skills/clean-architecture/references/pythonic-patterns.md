@@ -1,0 +1,342 @@
+# Pythonic Patterns Reference
+
+Classic design patterns reimagined for Python. Each pattern progresses from classic OOP to the preferred Pythonic implementation.
+
+## General Rules
+
+- **Protocol over ABC** — unless shared state in the superclass is needed
+- **`functools.partial`** — to configure generic functions rather than creating wrapper classes
+- **Closures** — to separate configuration-time args from runtime args
+- **`Callable` type aliases** — to replace single-method abstract classes
+- **Don't go full functional** — readability is the ultimate arbiter; find the happy medium
+
+---
+
+## Strategy Pattern
+
+**Recognize:** Long if/elif chain selecting different behavioral logic.
+
+**Pythonic implementation:** Higher-order function accepting a `Callable`.
+
+```python
+from typing import Callable
+
+DiscountFunction = Callable[[int], int]
+
+@dataclass
+class Order:
+    price: int
+    quantity: int
+    discount: DiscountFunction
+
+    def compute_total(self) -> int:
+        return self.price * self.quantity - self.discount(self.price * self.quantity)
+```
+
+**With configuration via closure:**
+
+```python
+def percentage_discount(percentage: float) -> DiscountFunction:
+    return lambda price: int(price * percentage)
+
+order = Order(price=100, quantity=2, discount=percentage_discount(0.15))
+```
+
+**With `functools.partial`:**
+
+```python
+from functools import partial
+
+def percentage_discount(price: int, percentage: float) -> int:
+    return int(price * percentage)
+
+order = Order(price=100, quantity=2, discount=partial(percentage_discount, percentage=0.15))
+```
+
+---
+
+## Abstract Factory Pattern
+
+**Recognize:** Need to create families of related objects that vary together.
+
+**Pythonic implementation:** Tuples of functions + `partial`.
+
+```python
+IncomeTaxFn = Callable[[int], int]
+CapitalTaxFn = Callable[[int], int]
+TaxFactory = tuple[IncomeTaxFn, CapitalTaxFn]
+
+def calculate_tax_on_rate(base: int, tax_rate: float = 0.1) -> int:
+    return int(base * tax_rate)
+
+simple_tax: TaxFactory = (
+    calculate_tax_on_rate,
+    partial(calculate_tax_on_rate, tax_rate=0),
+)
+
+def compute_tax(income: int, capital: int, factory: TaxFactory) -> int:
+    income_fn, capital_fn = factory
+    return income_fn(income) + capital_fn(capital)
+```
+
+**With builder function for configurability:**
+
+```python
+def create_nl_tax_factory(rate: float = 0.1, floor: int = 10_000) -> TaxFactory:
+    return (
+        partial(calculate_income_tax_nl, floor=floor),
+        partial(calculate_tax_on_rate, tax_rate=rate),
+    )
+```
+
+---
+
+## Bridge Pattern
+
+**Recognize:** Two independent hierarchies that need to vary independently.
+
+**Pythonic implementation:** `Callable` type aliases replace abstract-level references.
+
+```python
+GetPricesFunction = Callable[[str], list[int]]
+
+def should_buy_average(get_prices: GetPricesFunction, symbol: str) -> bool:
+    prices = get_prices(symbol)
+    return prices[-1] < statistics.mean(prices[-5:])
+```
+
+Pass a bound method as the callable: `should_buy_average(exchange.get_prices, "BTC")`.
+
+For advanced cases, use `functools.partial` to pre-bind all arguments, producing zero-argument callables:
+
+```python
+should_buy = partial(should_buy_average, exchange.get_prices, symbol)
+if should_buy():
+    buy()
+```
+
+---
+
+## Command Pattern
+
+**Recognize:** Need to store, sequence, undo, or batch operations.
+
+**Pythonic implementation:** Functions that return undo closures.
+
+```python
+UndoFunction = Callable[[], None]
+
+def append_text(doc: Document, text: str) -> UndoFunction:
+    doc.text += text
+    def undo():
+        doc.text = doc.text[:-len(text)]
+    return undo
+
+def clear_text(doc: Document) -> UndoFunction:
+    old_text = doc.text
+    doc.text = ""
+    def undo():
+        doc.text = old_text
+    return undo
+```
+
+**Batch via list comprehension:**
+
+```python
+CommandFunction = Callable[[], UndoFunction]
+
+def batch(commands: list[CommandFunction]) -> UndoFunction:
+    undo_functions = [cmd() for cmd in commands]
+    def undo():
+        for fn in reversed(undo_functions):
+            fn()
+    return undo
+
+undo_batch = batch([
+    partial(append_text, doc, "Hello"),
+    partial(clear_text, other_doc),
+])
+```
+
+---
+
+## Notification Patterns (Pub/Sub)
+
+**Recognize:** Core actions trigger side effects (email, Slack, logging) that pollute business logic.
+
+**Pythonic implementation:** Dict-based subscribe/post_event.
+
+```python
+from typing import Callable
+
+EventHandler = Callable[[User], None]
+subscribers: dict[str, list[EventHandler]] = {}
+
+def subscribe(event_type: str, handler: EventHandler) -> None:
+    subscribers.setdefault(event_type, []).append(handler)
+
+def post_event(event_type: str, user: User) -> None:
+    for handler in subscribers.get(event_type, []):
+        handler(user)
+```
+
+**Handler modules self-register via setup functions:**
+
+```python
+# event/email.py
+def handle_user_registered(user: User) -> None:
+    send_email(user.email, "Welcome", f"Hi {user.name}")
+
+def setup_email_handlers():
+    subscribe("user_registered", handle_user_registered)
+    subscribe("user_upgrade_plan", handle_user_upgrade_plan)
+```
+
+**Refactored API functions become clean:**
+
+```python
+def register_new_user(name: str, email: str):
+    user = create_user(name, email)
+    post_event("user_registered", user)
+```
+
+**Gotcha:** String-based event types can silently fail on typos. Consider using an Enum for event types.
+
+---
+
+## Registry Pattern
+
+**Recognize:** Need to create objects dynamically from data files (JSON, config).
+
+**Pythonic implementation:** Dict mapping strings → callables with `**kwargs` unpacking.
+
+```python
+task_functions: dict[str, Callable[..., None]] = {}
+
+def register(task_type: str, task_fn: Callable[..., None]) -> None:
+    task_functions[task_type] = task_fn
+
+def run(args: dict[str, Any]) -> None:
+    args_copy = args.copy()
+    task_type = args_copy.pop("type")
+    task_functions[task_type](**args_copy)
+```
+
+**Plugin support via `importlib`:**
+
+```python
+# inject.py (self-registering plugin)
+from registry import register
+
+def inject(material: str, target: str) -> None:
+    print(f"Injecting {material} into {target}")
+
+register("inject", inject)
+
+# loader.py
+import importlib
+
+def load_plugins(plugins: list[str]) -> None:
+    for plugin in plugins:
+        importlib.import_module(plugin)
+```
+
+---
+
+## Template Method Pattern
+
+**Recognize:** Same algorithm duplicated across sibling classes, varying only in the primitive steps.
+
+**Pythonic implementation:** Free function + Protocol parameters.
+
+```python
+class TradingEngine(Protocol):
+    def get_price_data(self) -> list[int]: ...
+    def get_amount(self) -> int: ...
+    def buy(self, symbol: str, amount: int) -> None: ...
+    def sell(self, symbol: str, amount: int) -> None: ...
+
+class TradingStrategy(Protocol):
+    def should_buy(self) -> bool: ...
+    def should_sell(self) -> bool: ...
+
+def trade(engine: TradingEngine, strategy: TradingStrategy) -> None:
+    if strategy.should_buy():
+        engine.buy(symbol, engine.get_amount())
+    elif strategy.should_sell():
+        engine.sell(symbol, engine.get_amount())
+```
+
+**Protocol Segregation** — split one large protocol into smaller focused ones. This is the Pythonic alternative to mixins for combining capabilities.
+
+---
+
+## Pipeline Pattern
+
+**Recognize:** Sequential transformations on data.
+
+**Pythonic implementation:** Function composition with `functools.reduce`.
+
+```python
+from functools import reduce, partial
+
+ComposableFunction = Callable[[float], float]
+
+def compose(*functions: ComposableFunction) -> ComposableFunction:
+    return reduce(lambda f, g: lambda x: g(f(x)), functions)
+
+pipeline = compose(
+    partial(add_n, n=3),
+    multiply_by_two,
+    partial(add_n, n=5),
+)
+result = pipeline(10)
+```
+
+For pandas: use `.pipe()` which combines composition and partial application.
+
+For complex pipelines: use existing libraries (Luigi, Apache Airflow) rather than building from scratch.
+
+---
+
+## Functional Patterns
+
+### Callback
+
+A function passed as an argument, called when something happens:
+
+```python
+ClickHandler = Callable[[Button], None]
+
+@dataclass
+class Button:
+    label: str
+    click_handlers: list[ClickHandler] = field(default_factory=list)
+
+    def click(self):
+        for handler in self.click_handlers:
+            handler(self)
+```
+
+### Function Wrapper
+
+Wraps an existing function, translating its interface:
+
+```python
+def loyalty_discount(price: int, loyalty: LoyaltyProgram) -> int:
+    percentage = {LoyaltyProgram.BRONZE: 10, LoyaltyProgram.GOLD: 20}[loyalty]
+    return percentage_discount(price, percentage)
+```
+
+### Function Builder
+
+Creates and returns a configured function:
+
+```python
+def create_email_sender(smtp_server: str, port: int, user: str, password: str) -> MessageSender:
+    def send(customer: Customer, subject: str, body: str) -> None:
+        send_email(smtp_server, port, user, password, customer.email, subject, body)
+    return send
+```
+
+Decouples configuration (SMTP settings) from usage (sending individual emails).
