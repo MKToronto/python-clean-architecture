@@ -26,9 +26,10 @@ This plugin distills those principles into actionable guidance for Claude Code. 
 
 3. Restart Claude Code (`/exit` then `claude`) to load the plugin.
 
-Or test locally without installing:
+Or download the repo and test locally without installing:
 
 ```bash
+git clone https://github.com/MKToronto/python-clean-architecture.git
 claude --plugin-dir /path/to/python-clean-architecture
 ```
 
