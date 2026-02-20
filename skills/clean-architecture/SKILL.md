@@ -160,11 +160,29 @@ class DataInterfaceStub:
 
 For detailed guidance beyond this overview, consult:
 
+**Architecture & Design:**
 - **`references/design-principles.md`** — Full treatment of the seven design principles with refactoring recipes and code examples
-- **`references/pythonic-patterns.md`** — Complete pattern catalog: when to recognize, how to implement the Pythonic way, progression from OOP to functional
 - **`references/layered-architecture.md`** — Detailed three-layer architecture guide: DataInterface, DBInterface, router composition, Pydantic models, to_dict utility
 - **`references/testable-api.md`** — Testing strategy: stub-based testing, DataInterfaceStub, test isolation, no-database testing
-- **`references/code-quality.md`** — 17 code quality rules: naming, nesting, flags, type abuse, error handling, and code review checklist
+
+**Python Fundamentals:**
+- **`references/classes-and-dataclasses.md`** — When to use classes vs dataclasses, @dataclass, field(), frozen, encapsulation
+- **`references/function-design.md`** — Pure functions, higher-order functions, closures, functools.partial, classes vs functions vs modules
+- **`references/data-structures.md`** — Choosing list vs dict vs tuple vs set, enums, performance trade-offs
+- **`references/error-handling.md`** — Custom exceptions, context managers, error handling layers, anti-patterns
+- **`references/code-quality.md`** — 17 code quality rules: naming, nesting, flags, type abuse, and code review checklist
+- **`references/project-organization.md`** — Modules, packages, imports, folder structure, avoid "utils" anti-pattern
+
+**Pythonic Patterns (full progressions from OOP → functional):**
+- **`references/patterns/strategy.md`** — Callable type alias, closures, functools.partial
+- **`references/patterns/abstract-factory.md`** — Tuples of functions, partial, builder functions
+- **`references/patterns/bridge.md`** — Bound methods as callables, when to stop going functional
+- **`references/patterns/command.md`** — Functions returning undo closures, batch via list comprehension
+- **`references/patterns/notification.md`** — Observer, Mediator, and Pub/Sub with dict-based subscribe/post_event
+- **`references/patterns/registry.md`** — Dict mapping + **kwargs unpacking, self-registering plugins via importlib
+- **`references/patterns/template-method.md`** — Free function + Protocol parameters, protocol segregation
+- **`references/patterns/pipeline.md`** — Chain of Responsibility, functools.reduce composition, pandas .pipe()
+- **`references/patterns/functional.md`** — Callback, Function Wrapper, Function Builder patterns
 
 ### Example Files
 

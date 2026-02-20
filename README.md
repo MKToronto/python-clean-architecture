@@ -70,21 +70,35 @@ Findings are reported by severity (Critical / Important / Suggestions) with file
 
 ```
 python-clean-architecture/
-├── .claude-plugin/plugin.json          Plugin manifest
-├── README.md                           This file
+├── .claude-plugin/plugin.json              Plugin manifest
+├── README.md                               This file
 ├── commands/
-│   └── review-architecture.md          /review-architecture slash command
+│   └── review-architecture.md              /review-architecture slash command
 └── skills/
     └── clean-architecture/
-        ├── SKILL.md                    Core skill (loaded when triggered)
+        ├── SKILL.md                        Core skill (loaded when triggered)
         ├── references/
-        │   ├── design-principles.md    7 principles with refactoring recipes
-        │   ├── pythonic-patterns.md    10 pattern recipes (OOP → functional)
-        │   ├── layered-architecture.md 3-layer FastAPI guide with full code
-        │   ├── testable-api.md         Stub-based testing strategy
-        │   └── code-quality.md         17 rules + code review checklist
+        │   ├── design-principles.md        7 principles with refactoring recipes
+        │   ├── layered-architecture.md     3-layer FastAPI guide with full code
+        │   ├── testable-api.md             Stub-based testing strategy
+        │   ├── code-quality.md             17 rules + code review checklist
+        │   ├── classes-and-dataclasses.md  Classes vs dataclasses decision guide
+        │   ├── function-design.md          Pure functions, closures, partial, HOFs
+        │   ├── data-structures.md          Choosing the right data structure
+        │   ├── error-handling.md           Custom exceptions, context managers
+        │   ├── project-organization.md     Modules, packages, folder structure
+        │   └── patterns/
+        │       ├── strategy.md             Full OOP → functional progression
+        │       ├── abstract-factory.md     Tuples of functions + partial
+        │       ├── bridge.md               Bound methods, when to stop
+        │       ├── command.md              Undo closures, batch commands
+        │       ├── notification.md         Observer → Mediator → Pub/Sub
+        │       ├── registry.md             Dict mapping, importlib plugins
+        │       ├── template-method.md      Free function + Protocol
+        │       ├── pipeline.md             Chain of Responsibility, compose
+        │       └── functional.md           Callback, Wrapper, Builder
         └── examples/
-            └── fastapi-hotel-api/      Complete working FastAPI project
+            └── fastapi-hotel-api/          Complete working FastAPI project
                 ├── main.py
                 ├── models/             Pydantic models + DataInterface Protocol
                 ├── operations/         Business logic (accepts Protocol)

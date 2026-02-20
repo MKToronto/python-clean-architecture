@@ -44,4 +44,4 @@ Review the code at `$ARGUMENTS` (or the current working directory if no path giv
 
 For each finding, reference the specific file and line, explain the principle violated, and show the recommended fix with a code snippet.
 
-Load `references/design-principles.md`, `references/code-quality.md`, and `references/pythonic-patterns.md` from the clean-architecture skill for detailed guidance.
+Load `references/design-principles.md`, `references/code-quality.md`, `references/error-handling.md`, and the relevant pattern files from `references/patterns/` for detailed guidance.
