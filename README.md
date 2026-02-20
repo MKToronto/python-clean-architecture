@@ -14,12 +14,14 @@ This plugin distills those principles into actionable guidance for Claude Code. 
 
 ## Installation
 
-```bash
-# Test locally
-claude --plugin-dir /path/to/python-clean-architecture
+```
+/plugin install github:MKToronto/python-clean-architecture
+```
 
-# Or install permanently (once published)
-# claude /install-plugin python-clean-architecture
+Or test locally:
+
+```bash
+claude --plugin-dir /path/to/python-clean-architecture
 ```
 
 ## Usage
