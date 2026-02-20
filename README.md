@@ -15,7 +15,8 @@ This plugin distills those principles into actionable guidance for Claude Code. 
 ## Installation
 
 ```
-/plugin install github:MKToronto/python-clean-architecture
+/plugin marketplace add MKToronto/python-clean-architecture
+/plugin install python-clean-architecture@python-clean-architecture
 ```
 
 Or test locally:
