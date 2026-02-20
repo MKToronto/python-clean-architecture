@@ -8,7 +8,7 @@ Review the code at `$ARGUMENTS` (or the current working directory if no path giv
 
 ## Review Process
 
-1. **Read the code** — Scan all Python files in the target path. Understand the project structure, imports, and relationships.
+1. **Read the code** — Find and read ALL Python files in the target path recursively. Read every `.py` file — do not skip any. Understand the project structure, imports, and relationships between files.
 
 2. **Check architecture layers** — Verify the three-layer separation:
    - Routers (API) → Operations (business logic) → Database (persistence)
