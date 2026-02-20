@@ -1,0 +1,14 @@
+{
+  "PreToolUse": [
+    {
+      "matcher": "Read",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "If the file_path in $TOOL_INPUT contains 'python-clean-architecture' and ends with '.md', this is the plugin reading its own reference files. Return ALLOW. Otherwise return PASS.",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}
