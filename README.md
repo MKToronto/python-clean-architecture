@@ -78,7 +78,9 @@ Findings are reported by severity (Critical / Important / Suggestions) with file
 
 ```
 python-clean-architecture/
-├── .claude-plugin/plugin.json              Plugin manifest
+├── .claude-plugin/
+│   ├── plugin.json                         Plugin manifest
+│   └── marketplace.json                    Marketplace catalog
 ├── README.md                               This file
 ├── commands/
 │   └── review-architecture.md              /review-architecture slash command
@@ -145,7 +147,7 @@ Each layer depends only on the layer below. The router is the composition root w
 - Dict mapping over if/elif chains
 - Readability over dogmatic functional purity
 
-10 classic design patterns implemented the Pythonic way:
+11 design patterns implemented the Pythonic way:
 
 - **Strategy** — `Callable` type alias, pass functions as args
 - **Abstract Factory** — Tuples of functions + `functools.partial`

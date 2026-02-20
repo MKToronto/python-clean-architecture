@@ -1,7 +1,7 @@
 ---
 name: Python Clean Architecture
 description: This skill should be used when the user asks to "scaffold a FastAPI project", "set up clean architecture", "refactor to clean architecture", "add a new endpoint", "add a router", "add a use case", "add a repository", "review my code structure", "apply design patterns in Python", "decouple my code", "improve code quality", "make my code testable", or mentions layered architecture, dependency injection, Protocol-based design, or Pythonic design patterns for Python/FastAPI projects.
-version: 0.1.0
+version: 0.3.1
 ---
 
 # Python Clean Architecture
@@ -94,8 +94,11 @@ When encountering these code smells, apply the corresponding pattern:
 | Duplicated algorithm across classes | Template Method | Extract to free function + Protocol parameter |
 | Two independent hierarchies that vary | Bridge | `Callable` type alias replaces abstract reference |
 | Need undo/batch/queue operations | Command | Functions returning undo closures |
-| Object creation coupled to usage | Factory | Tuples of functions + `functools.partial` |
+| Object creation coupled to usage | Abstract Factory | Tuples of functions + `functools.partial` |
 | Sequential data transformations | Pipeline | `functools.reduce` for composition, or framework `.pipe()` |
+| Need to react to events without coupling | Callback | Function passed as argument, called when event occurs |
+| Reusing a function with a different interface | Function Wrapper | Calls another function, translates its arguments |
+| Separating configuration from usage | Function Builder | Higher-order function returns a configured function |
 
 ### Default preferences for all patterns:
 
