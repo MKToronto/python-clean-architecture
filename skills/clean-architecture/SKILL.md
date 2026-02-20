@@ -169,6 +169,7 @@ For detailed guidance beyond this overview, consult:
 - **`references/classes-and-dataclasses.md`** — When to use classes vs dataclasses, @dataclass, field(), frozen, encapsulation
 - **`references/function-design.md`** — Pure functions, higher-order functions, closures, functools.partial, classes vs functions vs modules
 - **`references/data-structures.md`** — Choosing list vs dict vs tuple vs set, enums, performance trade-offs
+- **`references/types-and-type-hints.md`** — Python's type system, Callable types, nominal vs structural typing, best practices
 - **`references/error-handling.md`** — Custom exceptions, context managers, error handling layers, anti-patterns
 - **`references/code-quality.md`** — 17 code quality rules: naming, nesting, flags, type abuse, and code review checklist
 - **`references/project-organization.md`** — Modules, packages, imports, folder structure, avoid "utils" anti-pattern
