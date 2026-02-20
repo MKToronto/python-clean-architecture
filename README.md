@@ -14,12 +14,19 @@ This plugin distills those principles into actionable guidance for Claude Code. 
 
 ## Installation
 
+1. Add the marketplace:
 ```
 /plugin marketplace add MKToronto/python-clean-architecture
+```
+
+2. Install the plugin:
+```
 /plugin install python-clean-architecture@python-clean-architecture
 ```
 
-Or test locally:
+3. Restart Claude Code (`/exit` then `claude`) to load the plugin.
+
+Or test locally without installing:
 
 ```bash
 claude --plugin-dir /path/to/python-clean-architecture
