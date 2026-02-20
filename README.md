@@ -58,6 +58,8 @@ The skill triggers automatically when you ask Claude Code to:
 
 Or mention: layered architecture, dependency injection, Protocol-based design, Pythonic design patterns.
 
+### Slash Commands
+
 ### Explicit (Slash Command)
 
 ```
@@ -74,6 +76,30 @@ The review checks:
 
 Findings are reported by severity (Critical / Important / Suggestions) with file/line references and fix snippets.
 
+### All Commands
+
+**Review & Analysis:**
+```
+/review-architecture [path]       Full architecture review (standard or in-depth)
+/check-quality [path]             Quick check against 17 code quality rules
+/suggest-patterns [path]          Recommend Pythonic design patterns for your code
+/decouple [path]                  Find tight coupling and suggest DI improvements
+```
+
+**Refactoring:**
+```
+/make-pythonic [path]             Refactor to Pythonic patterns (ABC→Protocol, if/elif→dict, etc.)
+/extract-god-class [path]         Find and split god classes into focused collaborators
+```
+
+**Scaffolding:**
+```
+/scaffold-api <project-name>      Generate a new FastAPI project with clean architecture
+/add-endpoint <entity-name>       Scaffold a new endpoint across all three layers
+```
+
+`/scaffold-api` generates a full project structure with Pydantic models, operations, routers, database layer, and tests. `/add-endpoint` adds a new entity to an existing project — it creates files across all three layers (router + operations + DB model + Pydantic models + tests) and wires them into `main.py`.
+
 ## What's Inside
 
 ```
@@ -83,7 +109,14 @@ python-clean-architecture/
 │   └── marketplace.json                    Marketplace catalog
 ├── README.md                               This file
 ├── commands/
-│   └── review-architecture.md              /review-architecture slash command
+│   ├── review-architecture.md              Full architecture review
+│   ├── check-quality.md                    Quick 17-rule quality check
+│   ├── suggest-patterns.md                 Recommend Pythonic patterns
+│   ├── decouple.md                         Find coupling, suggest DI
+│   ├── make-pythonic.md                    Refactor to Pythonic patterns
+│   ├── extract-god-class.md                Split god classes
+│   ├── scaffold-api.md                     Generate FastAPI project
+│   └── add-endpoint.md                     Scaffold endpoint across layers
 └── skills/
     └── clean-architecture/
         ├── SKILL.md                        Core skill (loaded when triggered)
