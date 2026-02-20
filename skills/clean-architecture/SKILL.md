@@ -174,6 +174,9 @@ For detailed guidance beyond this overview, consult:
 - **`references/code-quality.md`** — 17 code quality rules: naming, nesting, flags, type abuse, and code review checklist
 - **`references/project-organization.md`** — Modules, packages, imports, folder structure, avoid "utils" anti-pattern
 
+**Pythonic Patterns:**
+- **`references/pythonic-patterns.md`** — Quick reference lookup table for all 10 patterns (use for reviews and pattern selection)
+
 **Pythonic Patterns (full progressions from OOP → functional):**
 - **`references/patterns/strategy.md`** — Callable type alias, closures, functools.partial
 - **`references/patterns/abstract-factory.md`** — Tuples of functions, partial, builder functions

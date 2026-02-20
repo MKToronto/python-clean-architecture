@@ -62,4 +62,4 @@ Review the code at `$ARGUMENTS` (or the current working directory if no path giv
 
 For each finding, reference the specific file and line, explain the principle violated, and show the recommended fix with a code snippet. Prioritize actionable cleanup suggestions over architectural observations.
 
-Load `references/design-principles.md`, `references/code-quality.md`, and `references/error-handling.md` from the clean-architecture skill for review checklists. For detailed pattern guidance (when explaining HOW to fix), consult the relevant files in `references/patterns/`.
+Load `references/design-principles.md`, `references/code-quality.md`, `references/error-handling.md`, and `references/pythonic-patterns.md` from the clean-architecture skill for review checklists. For detailed pattern guidance (when explaining HOW to fix), consult the relevant files in `references/patterns/`.
