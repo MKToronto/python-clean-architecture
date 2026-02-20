@@ -33,6 +33,14 @@ git clone https://github.com/MKToronto/python-clean-architecture.git
 claude --plugin-dir /path/to/python-clean-architecture
 ```
 
+## Updating
+
+```
+/plugin marketplace update python-clean-architecture
+```
+
+Then restart Claude Code (`/exit` then `claude`).
+
 ## Usage
 
 ### Automatic (Skill)
@@ -86,6 +94,7 @@ python-clean-architecture/
         │   ├── function-design.md          Pure functions, closures, partial, HOFs
         │   ├── data-structures.md          Choosing the right data structure
         │   ├── error-handling.md           Custom exceptions, context managers
+        │   ├── types-and-type-hints.md    Python's type system, Callable types
         │   ├── project-organization.md     Modules, packages, folder structure
         │   └── patterns/
         │       ├── strategy.md             Full OOP → functional progression
