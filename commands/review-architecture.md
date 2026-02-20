@@ -61,20 +61,29 @@ Then review the code at `$ARGUMENTS` (or the current working directory if no pat
 
 7. **Report findings** — Structure the output in this order:
 
-   ### Architecture Summary Diagram
-   Open with an ASCII diagram showing the actual dependency flow discovered in the project. Map real file/module names onto the three-layer model. Show which modules depend on which, and flag any arrows that violate the layer rules. Example format:
+   ### Architecture Summary
+   Classify every Python file into a layer, then show the dependency flows. Use a simple vertical list format — never multi-column ASCII art. Example:
 
    ```
-   Routers (API)          Operations (logic)      Database (persistence)
-   ─────────────          ──────────────────      ─────────────────────
-   routers/booking.py  →  operations/booking.py →  db/db_interface.py
-   routers/customer.py →  operations/customer.py    db/models.py
-                                                     db/database.py
+   Layers
+   ──────
+   API:        routes/booking.py, routes/customer.py
+   Logic:      operations/booking.py, operations/customer.py
+   Database:   db/db_interface.py, db/models.py, db/database.py
+   Unclear:    utils/helpers.py (mixed concerns)
 
-   ⚠ routers/admin.py → db/models.py  (layer skip — should go through operations)
+   Dependency Flows
+   ────────────────
+   routes/booking.py → operations/booking.py → db/db_interface.py    ✓
+   routes/customer.py → operations/customer.py → db/db_interface.py  ✓
+   routes/admin.py → db/models.py                                    ⚠ layer skip
+
+   Layer Violations
+   ────────────────
+   ⚠ routes/admin.py imports db/models.py directly — should go through operations
    ```
 
-   Adapt the diagram to the actual project structure. If the project does not follow the three-layer model, show the dependency flow as-is and note what a target architecture would look like.
+   Adapt to the actual project. If it does not follow the three-layer model, show the dependency flow as-is and note what a target architecture would look like. Keep it compact — group similar flows rather than listing every file individually if there are many.
 
    ### What Works Well
    Call out specific things the code does right. Reference files and patterns. Examples:
@@ -93,7 +102,13 @@ Then review the code at `$ARGUMENTS` (or the current working directory if no pat
    - **Important** — Cohesion issues, Law of Demeter violations, missing type hints
    - **Suggestions** — Pattern improvements, naming, simplification opportunities, cleanup refactorings
 
-   For each finding, reference the specific file and line, explain the principle violated, and show the recommended fix with a code snippet. Prioritize actionable cleanup suggestions over architectural observations.
+   For each finding, include all of the following:
+   1. **File and line** — exact location
+   2. **Principle(s)** — which of the 7 design principles are violated, by number and name (e.g., "P1 High Cohesion", "P3 Depend on Abstractions"). Can be more than one.
+   3. **Pattern** — if a Pythonic design pattern would help, name it (e.g., "Strategy pattern — use Callable type alias", "Registry pattern — dict mapping replaces if/elif"). Not every finding needs a pattern.
+   4. **Fix** — show the recommended fix with a code snippet
+
+   Prioritize actionable cleanup suggestions over architectural observations.
 
 ## In-Depth Mode
 

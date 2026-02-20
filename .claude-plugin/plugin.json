@@ -1,5 +1,5 @@
 {
   "name": "python-clean-architecture",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Clean Architecture guidance for Python/FastAPI projects. Provides principles-driven design, Pythonic patterns, and layered architecture scaffolding based on Arjan Codes' methodology."
 }
