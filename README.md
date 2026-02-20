@@ -113,11 +113,18 @@ Each layer depends only on the layer below. The router is the composition root w
 6. Start with the Data — Information Expert, fix data structures first
 7. Keep Things Simple — DRY, KISS, YAGNI (but avoid hasty abstractions)
 
-### Pythonic Pattern Defaults
+### Pythonic Patterns
 
-- Protocol over ABC (unless shared superclass state needed)
-- `functools.partial` over wrapper classes
-- Closures over factory class hierarchies
-- `Callable` type aliases over single-method abstract classes
-- Dict mapping over if/elif chains
-- Readability over dogmatic functional purity
+10 classic design patterns implemented the Pythonic way:
+
+- **Strategy** — `Callable` type alias, pass functions as args
+- **Abstract Factory** — Tuples of functions + `functools.partial`
+- **Bridge** — `Callable` type alias replaces abstract reference
+- **Command** — Functions returning undo closures
+- **Pub/Sub** — Dict-based `subscribe(event, handler)` / `post_event(event, data)`
+- **Registry** — `dict[str, Callable]` mapping + `**kwargs` unpacking
+- **Template Method** — Free function + Protocol parameter
+- **Pipeline** — `functools.reduce` for composition
+- **Callback / Wrapper / Builder** — Functional patterns for event handling, interface translation, and configuration
+
+Defaults: Protocol over ABC, `functools.partial` over wrapper classes, closures over factory hierarchies, readability over dogmatic functional purity.
