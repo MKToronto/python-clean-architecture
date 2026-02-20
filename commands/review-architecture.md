@@ -1,16 +1,14 @@
 ---
 name: review-architecture
 description: Review code against Python Clean Architecture principles
-argument-hint: [path] [deep]
+argument-hint: [path]
 ---
 
-Parse `$ARGUMENTS` to extract the target path and whether "deep" was specified. Examples:
-- `/review-architecture` → path: current directory, deep: no
-- `/review-architecture src/` → path: src/, deep: no
-- `/review-architecture src/ deep` → path: src/, deep: yes
-- `/review-architecture deep` → path: current directory, deep: yes
+Before starting the review, use AskUserQuestion to ask: "Which review depth?" with these options:
+1. **Standard** — "Reviews against built-in checklists. No extra permissions needed."
+2. **In-depth** — "Loads detailed reference files for deeper analysis with refactoring recipes and pattern guidance."
 
-Review the code at the target path against Python Clean Architecture principles.
+Then review the code at `$ARGUMENTS` (or the current working directory if no path given) against Python Clean Architecture principles.
 
 ## Review Process
 
@@ -97,9 +95,9 @@ Review the code at the target path against Python Clean Architecture principles.
 
    For each finding, reference the specific file and line, explain the principle violated, and show the recommended fix with a code snippet. Prioritize actionable cleanup suggestions over architectural observations.
 
-## Deep Mode
+## In-Depth Mode
 
-If "deep" was specified in the arguments, load the following reference files for a more thorough analysis with detailed refactoring recipes and pattern guidance:
+If the user chose in-depth, load the following reference files for deeper analysis with detailed refactoring recipes and pattern guidance:
 - `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/design-principles.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/code-quality.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/error-handling.md`
@@ -107,4 +105,4 @@ If "deep" was specified in the arguments, load the following reference files for
 
 For detailed pattern guidance (when explaining HOW to fix), consult the relevant files in `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/patterns/`.
 
-If "deep" was NOT specified, use only the checklists above — do not load reference files.
+If the user chose standard, use only the checklists above — do not load reference files.
