@@ -1,0 +1,24 @@
+{
+  "name": "python-clean-architecture",
+  "owner": {
+    "name": "MKToronto"
+  },
+  "metadata": {
+    "description": "Scaffold, review, and refactor Python projects with clean code and architecture. Design principles and patterns implemented the Pythonic way."
+  },
+  "plugins": [
+    {
+      "name": "python-clean-architecture",
+      "source": "./",
+      "description": "Clean Architecture guidance for Python/FastAPI projects. Provides principles-driven design, Pythonic patterns, and layered architecture scaffolding. Inspired by Arjan Codes.",
+      "version": "0.1.0",
+      "author": {
+        "name": "MKToronto"
+      },
+      "repository": "https://github.com/MKToronto/python-clean-architecture",
+      "license": "MIT",
+      "keywords": ["python", "clean-architecture", "fastapi", "design-patterns", "code-review"],
+      "category": "architecture"
+    }
+  ]
+}
