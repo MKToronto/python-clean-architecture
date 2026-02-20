@@ -91,4 +91,10 @@ Review the code at `$ARGUMENTS` (or the current working directory if no path giv
 
    For each finding, reference the specific file and line, explain the principle violated, and show the recommended fix with a code snippet. Prioritize actionable cleanup suggestions over architectural observations.
 
-Load `references/design-principles.md`, `references/code-quality.md`, `references/error-handling.md`, and `references/pythonic-patterns.md` from the clean-architecture skill for review checklists. For detailed pattern guidance (when explaining HOW to fix), consult the relevant files in `references/patterns/`.
+Load the following reference files for review checklists:
+- `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/design-principles.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/code-quality.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/error-handling.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/pythonic-patterns.md`
+
+For detailed pattern guidance (when explaining HOW to fix), consult the relevant files in `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/patterns/`.
