@@ -36,12 +36,30 @@ Review the code at `$ARGUMENTS` (or the current working directory if no path giv
    - Factory as dict mapping, not if/elif
    - Protocol over ABC (unless shared state needed)
    - functools.partial for configuration, closures for builders
+   - Pub/Sub for notification side effects, not inline calls
+   - Registry for data-driven object creation, not if/elif
+   - Context managers for resource management, not try/finally
+   - Custom exception classes, not broad except catching
+   - Dataclasses for value objects and DTOs, not manual __init__
+   - Pure functions where possible, side effects pushed to boundaries
 
-6. **Report findings** — Present results organized by severity:
+6. **Check code cleanup opportunities** — Look for concrete refactoring targets:
+   - Extract class when a class does two things
+   - Extract function when a function does two things
+   - Replace mutable globals with injected dataclass context
+   - Replace boolean flag parameters with separate functions
+   - Replace string constants with Enums
+   - Replace deep nesting (3+ levels) with early returns or extraction
+   - Replace god classes (>200 lines, >5 responsibilities) with collaborators
+   - Move methods to the class that owns the data (Information Expert)
+   - Replace parallel data structures with a single data class
+   - Replace if/elif chains with dict mapping
+
+7. **Report findings** — Present results organized by severity:
    - **Critical** — Layer violations, missing abstractions, tight coupling to concrete DB
    - **Important** — Cohesion issues, Law of Demeter violations, missing type hints
-   - **Suggestions** — Pattern improvements, naming, simplification opportunities
+   - **Suggestions** — Pattern improvements, naming, simplification opportunities, cleanup refactorings
 
-For each finding, reference the specific file and line, explain the principle violated, and show the recommended fix with a code snippet.
+For each finding, reference the specific file and line, explain the principle violated, and show the recommended fix with a code snippet. Prioritize actionable cleanup suggestions over architectural observations.
 
-Load `references/design-principles.md`, `references/code-quality.md`, `references/error-handling.md`, and the relevant pattern files from `references/patterns/` for detailed guidance.
+Load `references/design-principles.md`, `references/code-quality.md`, and `references/error-handling.md` from the clean-architecture skill for review checklists. For detailed pattern guidance (when explaining HOW to fix), consult the relevant files in `references/patterns/`.
