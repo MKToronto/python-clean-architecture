@@ -1,10 +1,16 @@
 ---
 name: review-architecture
 description: Review code against Python Clean Architecture principles
-argument-hint: [path]
+argument-hint: [path] [deep]
 ---
 
-Review the code at `$ARGUMENTS` (or the current working directory if no path given) against Python Clean Architecture principles.
+Parse `$ARGUMENTS` to extract the target path and whether "deep" was specified. Examples:
+- `/review-architecture` → path: current directory, deep: no
+- `/review-architecture src/` → path: src/, deep: no
+- `/review-architecture src/ deep` → path: src/, deep: yes
+- `/review-architecture deep` → path: current directory, deep: yes
+
+Review the code at the target path against Python Clean Architecture principles.
 
 ## Review Process
 
@@ -91,10 +97,14 @@ Review the code at `$ARGUMENTS` (or the current working directory if no path giv
 
    For each finding, reference the specific file and line, explain the principle violated, and show the recommended fix with a code snippet. Prioritize actionable cleanup suggestions over architectural observations.
 
-Load the following reference files for review checklists:
+## Deep Mode
+
+If "deep" was specified in the arguments, load the following reference files for a more thorough analysis with detailed refactoring recipes and pattern guidance:
 - `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/design-principles.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/code-quality.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/error-handling.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/pythonic-patterns.md`
 
 For detailed pattern guidance (when explaining HOW to fix), consult the relevant files in `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/patterns/`.
+
+If "deep" was NOT specified, use only the checklists above — do not load reference files.
