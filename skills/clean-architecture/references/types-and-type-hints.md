@@ -438,7 +438,95 @@ Prefer `Protocol` for defining interfaces in clean architecture. It keeps compon
 
 ---
 
-## 6. Trade-offs
+## 6. Generic Type Aliases (Python 3.12+)
+
+Python 3.12 introduced the `type` statement for defining type aliases, including generic ones. This replaces the older `TypeAlias` and `TypeVar` approach with a cleaner syntax.
+
+### Basic type alias
+
+```python
+# Python 3.12+
+type Vector = list[float]
+type UserID = str
+type PriceMap = dict[str, float]
+
+def scale(v: Vector, factor: float) -> Vector:
+    return [x * factor for x in v]
+```
+
+### Generic type aliases
+
+Generic aliases let you define reusable type patterns with type parameters:
+
+```python
+from typing import Callable
+
+# A function that transforms a value of type T
+type TransformFunc[T] = Callable[[T], T]
+
+# A function that converts from T to V
+type ProcessFunc[T, V] = Callable[[T], V]
+
+# A function that filters items of type T
+type FilterFunc[T] = Callable[[T], bool]
+```
+
+These are reusable across your codebase:
+
+```python
+def apply_transform[T](value: T, transform: TransformFunc[T]) -> T:
+    return transform(value)
+
+def apply_filter[T](items: list[T], predicate: FilterFunc[T]) -> list[T]:
+    return [item for item in items if predicate(item)]
+
+
+# Usage — type checker infers T=int
+result = apply_transform(5, lambda x: x * 2)        # int
+filtered = apply_filter([1, 2, 3, 4], lambda x: x > 2)  # list[int]
+```
+
+### Generic strategy pattern
+
+Combine generic type aliases with the strategy pattern for reusable, type-safe function injection:
+
+```python
+from dataclasses import dataclass
+from typing import Callable
+
+type DiscountFunc[T] = Callable[[T], T]
+
+
+@dataclass
+class Order:
+    price: float
+    quantity: int
+    discount: DiscountFunc[float]
+
+    def compute_total(self) -> float:
+        subtotal = self.price * self.quantity
+        return self.discount(subtotal)
+```
+
+### Before Python 3.12
+
+For projects on Python 3.10/3.11, use `TypeVar` and `TypeAlias`:
+
+```python
+from typing import TypeVar, Callable, TypeAlias
+
+T = TypeVar("T")
+V = TypeVar("V")
+
+TransformFunc: TypeAlias = Callable[[T], T]
+ProcessFunc: TypeAlias = Callable[[T], V]
+```
+
+The 3.12 `type` statement is preferred when your project supports it — it's more readable and doesn't require importing `TypeVar`.
+
+---
+
+## 7. Trade-offs
 
 Type hints are not free. Three trade-offs deserve explicit consideration.
 
@@ -517,7 +605,7 @@ Strategies to manage this:
 
 ---
 
-## 7. Best Practices
+## 8. Best Practices
 
 ### Annotate Every Function
 

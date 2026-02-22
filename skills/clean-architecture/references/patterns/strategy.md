@@ -50,7 +50,53 @@ if __name__ == "__main__":
 
 ---
 
-## 2. Classic OOP Solution
+## 2. Simplest Solution: Dict Lookup
+
+Before reaching for classes or callables, check if the if/elif chain is just mapping keys to values. If so, a dict is all you need.
+
+```python
+from dataclasses import dataclass
+
+DISCOUNT_RATES: dict[str, float] = {
+    "percentage": 0.20,
+    "fixed_ten": 10_00,
+}
+
+
+@dataclass
+class Order:
+    price: int
+    quantity: int
+
+    def compute_total(self, discount_type: str) -> int:
+        discount = DISCOUNT_RATES.get(discount_type, 0)
+        return self.price * self.quantity - discount
+
+
+def main() -> None:
+    order = Order(price=100_00, quantity=2)
+    print(f"Total: ${order.compute_total('percentage') / 100:.2f}")
+```
+
+This eliminates the if/elif chain with a single dict lookup. It's readable, testable, and easy to extend — add a new key to the dict and you're done.
+
+### When dict lookup is enough
+
+- Each branch maps to a **value** (a number, a string, a config), not a **behavior**
+- All branches have the same shape (same type of result)
+- No complex logic per branch — just data selection
+
+### When you need more
+
+- Each branch has **different logic**, not just different values
+- Branches need access to runtime state (e.g., the order price)
+- You need to compose or chain strategies
+
+If you need actual behavior selection, continue to the solutions below.
+
+---
+
+## 3. OOP Solution
 
 Introduce an abstract `DiscountStrategy` class. Each branch becomes a concrete subclass. `Order` depends only on the abstraction.
 
@@ -145,7 +191,7 @@ Magic numbers (`0.20`, `10_00`) are still hardcoded inside each strategy class. 
 
 ---
 
-## 3. Pythonic Progression
+## 4. Pythonic Progression
 
 ### Step A: Callable type alias replaces the abstract class
 
@@ -349,7 +395,7 @@ def main() -> None:
 
 ---
 
-## 4. When to Use
+## 5. When to Use
 
 Recognize these signals in existing code:
 
@@ -363,12 +409,13 @@ Confirm by asking: "Does this function do different things depending on a flag, 
 
 ---
 
-## 5. Trade-offs
+## 6. Trade-offs
 
 ### When each approach is appropriate
 
 | Approach | Use when... | Avoid when... |
 |---|---|---|
+| **Dict lookup** | Branches map keys to values (numbers, strings, configs), not behavior | Each branch has different logic or needs runtime state |
 | **ABC** | Strategies share instance variables or helper methods in the base class | The strategy is a single method with no shared state |
 | **Protocol** | Third-party code must satisfy the strategy interface without modification | Shared base implementation is needed |
 | **Callable type alias** | Strategy is a single function; maximum flexibility wanted | Strategy requires multiple cooperating methods |
@@ -385,7 +432,7 @@ Confirm by asking: "Does this function do different things depending on a flag, 
 
 ---
 
-## 6. Related Patterns
+## 7. Related Patterns
 
 - **Function Builder** -- a generalization of the closure approach (Step D). The builder function's parameters are completely independent from the returned function's parameters. Covered in the Function Builder pattern reference.
 - **Abstract Factory** -- strategies that produce families of related objects. Often implemented as tuples of callables with `partial` for configuration.

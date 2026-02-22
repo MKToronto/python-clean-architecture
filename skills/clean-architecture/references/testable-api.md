@@ -201,6 +201,139 @@ def test_read_nonexistent_room():
 
 ---
 
+## Unit Testing Practices
+
+Beyond stub-based testing, apply these general practices to write thorough, maintainable tests.
+
+### Test Structure: Arrange-Act-Assert
+
+Every test follows three phases. Keep them visually distinct:
+
+```python
+def test_booking_price_for_multiple_nights():
+    # Arrange
+    stub = DataInterfaceStub()
+    stub.data["room-1"] = {"id": "room-1", "price": 150}
+    data = BookingCreate(room_id="room-1", from_date=date(2024, 1, 1), to_date=date(2024, 1, 4))
+
+    # Act
+    booking = create_booking(data, stub)
+
+    # Assert
+    assert booking.price == 450
+```
+
+### Test Naming
+
+Name tests to describe the scenario and expected outcome:
+
+```python
+# BAD: what does this test?
+def test_booking():
+
+# GOOD: scenario and expectation are clear
+def test_booking_price_equals_nights_times_room_rate()
+def test_create_room_with_duplicate_number_raises_conflict()
+def test_delete_nonexistent_room_raises_not_found()
+```
+
+### Edge Case Discovery
+
+For any operation, systematically check:
+
+| Category | Examples |
+|---|---|
+| Empty/zero | Empty list, zero quantity, empty string |
+| Boundary | First item, last item, exactly at limit |
+| Invalid | Wrong type, missing required field, negative numbers |
+| Duplicate | Creating same entity twice, duplicate IDs |
+| Not found | Reading/updating/deleting nonexistent entity |
+| Overflow | Very large numbers, very long strings |
+
+```python
+def test_create_booking_zero_nights():
+    stub = DataInterfaceStub()
+    stub.data["room-1"] = {"id": "room-1", "price": 100}
+    data = BookingCreate(room_id="room-1", from_date=date(2024, 1, 1), to_date=date(2024, 1, 1))
+    booking = create_booking(data, stub)
+    assert booking.price == 0
+
+
+def test_read_all_rooms_when_empty():
+    stub = DataInterfaceStub()
+    rooms = read_all_rooms(stub)
+    assert rooms == []
+```
+
+### Exception Testing
+
+Use `pytest.raises` to verify that the correct exception is raised with the correct data:
+
+```python
+def test_read_nonexistent_room_raises_not_found():
+    stub = DataInterfaceStub()
+    with pytest.raises(NotFoundError) as exc_info:
+        read_room("nonexistent-id", stub)
+    assert exc_info.value.entity_id == "nonexistent-id"
+
+
+def test_create_booking_invalid_room_raises_not_found():
+    stub = DataInterfaceStub()
+    data = BookingCreate(room_id="bad-id", from_date=date(2024, 1, 1), to_date=date(2024, 1, 3))
+    with pytest.raises(NotFoundError):
+        create_booking(data, stub)
+```
+
+### Parametrized Tests
+
+When testing the same logic with different inputs, use `pytest.mark.parametrize` instead of duplicating tests:
+
+```python
+@pytest.mark.parametrize("nights,expected_price", [
+    (1, 100),
+    (3, 300),
+    (7, 700),
+    (0, 0),
+])
+def test_booking_price_scales_with_nights(nights: int, expected_price: int):
+    stub = DataInterfaceStub()
+    stub.data["room-1"] = {"id": "room-1", "price": 100}
+    start = date(2024, 1, 1)
+    end = start + timedelta(days=nights)
+    data = BookingCreate(room_id="room-1", from_date=start, to_date=end)
+    booking = create_booking(data, stub)
+    assert booking.price == expected_price
+```
+
+### Test Isolation
+
+Each test must be independent. Never share state between tests:
+
+```python
+# BAD: shared stub leaks state between tests
+shared_stub = DataInterfaceStub()
+
+def test_create():
+    shared_stub.create({"id": "1", "name": "A"})
+
+def test_read_all():
+    # fails or passes depending on test execution order
+    assert len(shared_stub.read_all()) == 0
+
+
+# GOOD: each test creates its own stub
+def test_create():
+    stub = DataInterfaceStub()
+    stub.create({"id": "1", "name": "A"})
+    assert "1" in stub.data
+
+def test_read_all_empty():
+    stub = DataInterfaceStub()
+    assert stub.read_all() == []
+```
+
+---
+
 ## Testing Checklist
 
 When adding tests for a new entity:
@@ -209,5 +342,7 @@ When adding tests for a new entity:
 2. Test CRUD operations: create, read_all, read_by_id, update, delete
 3. Test business logic: computed values, validations, edge cases
 4. Test error cases: not found, not authorized, invalid data
-5. Test with multiple entities: ensure operations work with populated data
-6. Use test-specific stub subclasses for failure scenarios
+5. Test boundary cases: empty inputs, zero values, duplicates
+6. Test with multiple entities: ensure operations work with populated data
+7. Use test-specific stub subclasses for failure scenarios
+8. Use `pytest.mark.parametrize` for input/output variations

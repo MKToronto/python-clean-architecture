@@ -176,6 +176,8 @@ For detailed guidance beyond this overview, consult:
 - **`references/error-handling.md`** — Custom exceptions, context managers, error handling layers, anti-patterns
 - **`references/code-quality.md`** — 17 code quality rules: naming, nesting, flags, type abuse, and code review checklist
 - **`references/project-organization.md`** — Modules, packages, imports, folder structure, avoid "utils" anti-pattern
+- **`references/context-managers.md`** — Context manager protocol, `__enter__`/`__exit__`, `@contextmanager`, `ExitStack`, async context managers
+- **`references/decorators.md`** — Decorator patterns: retry with backoff, logging, timing, `functools.wraps`, parameterized decorators
 
 **Pythonic Patterns:**
 - **`references/pythonic-patterns.md`** — Quick reference lookup table for all 10 patterns (use for reviews and pattern selection)
