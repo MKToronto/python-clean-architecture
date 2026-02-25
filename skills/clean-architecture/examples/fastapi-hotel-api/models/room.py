@@ -1,16 +1,4 @@
-from typing import Any, Protocol
-
 from pydantic import BaseModel
-
-DataObject = dict[str, Any]
-
-
-class DataInterface(Protocol):
-    def read_by_id(self, id: str) -> DataObject: ...
-    def read_all(self) -> list[DataObject]: ...
-    def create(self, data: DataObject) -> DataObject: ...
-    def update(self, id: str, data: DataObject) -> DataObject: ...
-    def delete(self, id: str) -> None: ...
 
 
 class RoomCreate(BaseModel):

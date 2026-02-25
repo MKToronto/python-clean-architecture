@@ -1,5 +1,6 @@
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 DataObject = dict[str, Any]
@@ -21,7 +22,7 @@ class DBInterface:
         return to_dict(obj)
 
     def read_all(self) -> list[DataObject]:
-        objects = self.db_session.query(self.db_class).all()
+        objects = self.db_session.scalars(select(self.db_class)).all()
         return [to_dict(obj) for obj in objects]
 
     def create(self, data: DataObject) -> DataObject:

@@ -59,9 +59,9 @@ Use `data.model_dump(exclude_none=True)` to get only the fields that were actual
 
 ---
 
-## The DataInterface Protocol
+## The DataInterface Protocol (Repository Pattern)
 
-The contract between operations and database layers:
+The contract between operations and database layers. This is the Repository pattern — an abstraction that separates data access from business logic, allowing operations to work with any data source through a uniform interface:
 
 ```python
 from typing import Any, Protocol
@@ -89,6 +89,7 @@ Using plain dicts as the data transfer format decouples operations from ORM mode
 A single class parameterized by SQLAlchemy model class:
 
 ```python
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from typing import Any
 
@@ -100,11 +101,13 @@ class DBInterface:
         self.db_class = db_class
 
     def read_by_id(self, id: str) -> DataObject:
-        obj = self.db_session.query(self.db_class).get(id)
+        obj = self.db_session.get(self.db_class, id)
+        if obj is None:
+            raise KeyError(f"Not found: {id}")
         return to_dict(obj)
 
     def read_all(self) -> list[DataObject]:
-        objects = self.db_session.query(self.db_class).all()
+        objects = self.db_session.scalars(select(self.db_class)).all()
         return [to_dict(obj) for obj in objects]
 
     def create(self, data: DataObject) -> DataObject:
@@ -114,14 +117,18 @@ class DBInterface:
         return to_dict(obj)
 
     def update(self, id: str, data: DataObject) -> DataObject:
-        obj = self.db_session.query(self.db_class).get(id)
+        obj = self.db_session.get(self.db_class, id)
+        if obj is None:
+            raise KeyError(f"Not found: {id}")
         for key, value in data.items():
             setattr(obj, key, value)
         self.db_session.commit()
         return to_dict(obj)
 
     def delete(self, id: str) -> None:
-        obj = self.db_session.query(self.db_class).get(id)
+        obj = self.db_session.get(self.db_class, id)
+        if obj is None:
+            raise KeyError(f"Not found: {id}")
         self.db_session.delete(obj)
         self.db_session.commit()
 ```
@@ -359,10 +366,10 @@ By default, SQLAlchemy loads relationships lazily (on first access). This causes
 from sqlalchemy.orm import joinedload, selectinload
 
 # Eager load in one query (JOIN) — good for single-object fetches
-session.query(DBRoom).options(joinedload(DBRoom.bookings)).get(room_id)
+session.execute(select(DBRoom).options(joinedload(DBRoom.bookings)).where(DBRoom.id == room_id)).scalar_one()
 
 # Eager load via separate SELECT — good for list queries (avoids cartesian product)
-session.query(DBRoom).options(selectinload(DBRoom.bookings)).all()
+session.scalars(select(DBRoom).options(selectinload(DBRoom.bookings))).all()
 ```
 
 **Rule of thumb:** Use `selectinload` for collections (one-to-many), `joinedload` for single objects (many-to-one).

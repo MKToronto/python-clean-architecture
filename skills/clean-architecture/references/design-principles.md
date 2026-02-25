@@ -347,15 +347,15 @@ The dictionary-mapping approach means the system is open for extension (add new 
 
 The shape of data structures directly determines architecture quality.
 
-### Information Expert Principle (GRASP)
+### Information Expert Principle (GRASP) & Tell, Don't Ask
 
-Place behavior on the class that has the data needed to perform it:
+Place behavior on the class that has the data needed to perform it. Instead of retrieving data from an object and computing externally, **tell** the object to do the computation itself — it is closest to the data.
 
 ```python
-# BAD: main reaches into rental and vehicle
+# BAD (Ask): pull data out, compute externally
 total = rental.vehicle.total_price(rental.days, rental.additional_km)
 
-# GOOD: RentalContract delegates to Vehicle
+# GOOD (Tell): tell the object to compute it
 @dataclass
 class RentalContract:
     vehicle: Vehicle

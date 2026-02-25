@@ -24,9 +24,9 @@ Analyze the code at `$ARGUMENTS` (or the current working directory if no path gi
    ```
    Module Dependencies
    ───────────────────
-   routes/booking.py → operations/booking.py, models/booking.py
+   routers/booking.py → operations/booking.py, models/booking.py
    operations/booking.py → models/booking.py  (no DB import ✓)
-   routes/admin.py → db/models.py             ⚠ concrete DB import
+   routers/admin.py → db/models.py             ⚠ concrete DB import
    ```
 
 4. **Propose decoupling** — For each issue, show:

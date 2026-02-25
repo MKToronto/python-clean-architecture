@@ -75,17 +75,35 @@ except:
     pass  # silently swallowed, program continues with hidden bug
 ```
 
-### Avoid `except Exception:`
+### Be cautious with `except Exception:`
 
-Marginally better than bare `except:`, but still catches far too many error types. It masks bugs like `NameError` and `AttributeError` that indicate broken code, not runtime conditions.
+In most code, `except Exception:` is too broad — it masks bugs like `NameError` and `AttributeError` that indicate broken code, not runtime conditions.
 
 ```python
-# BAD: catches everything that inherits from Exception
+# BAD: catches everything with no recovery mechanism
 try:
     blog = fetch_blog(blog_id)
 except Exception:
     return 404  # a typo in fetch_blog also returns 404
 ```
+
+**Exception:** Broad catches are acceptable when there is a clear recovery mechanism — retry with re-raise after exhaustion, transaction rollback, or cleanup-then-re-raise. The key is that the exception must eventually surface if it cannot be handled:
+
+```python
+# ACCEPTABLE: retry decorator re-raises after exhaustion
+except Exception as e:
+    if attempt == retries:
+        raise  # safety mechanism — bug surfaces after retries
+
+# ACCEPTABLE: unit-of-work rolls back then re-raises
+except Exception:
+    session.rollback()
+    raise
+```
+
+### Fail fast
+
+Prefer letting your program crash visibly rather than cluttering code with defensive error-handling blocks. A clear traceback from an unhandled exception is more useful than a silently broken program that swallowed the error. Only catch exceptions at defined boundaries (API endpoints, CLI entry points) where you can convert them to user-facing responses.
 
 ### Do not catch what you cannot handle
 
@@ -298,7 +316,7 @@ Linting tools like pylint and ruff flag bare `except:` clauses for exactly this 
 ### Do Not
 
 - Use bare `except:` -- it catches everything including bugs
-- Use `except Exception:` -- nearly as bad, still catches `NameError` and `AttributeError`
+- Use `except Exception:` without a recovery mechanism (retry/rollback/re-raise) -- it catches `NameError` and `AttributeError`
 - Catch exceptions you cannot meaningfully handle
 - Use `except: pass` -- the most dangerous pattern in Python error handling
 - Scatter try-except blocks throughout every function

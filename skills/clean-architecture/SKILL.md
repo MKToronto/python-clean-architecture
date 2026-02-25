@@ -152,6 +152,10 @@ project_name/
 Create a `DataInterfaceStub` base class that stores data in a plain dict. Override specific methods in test-specific subclasses. Pass the stub to operations functions — no database needed.
 
 ```python
+from typing import Any
+
+DataObject = dict[str, Any]
+
 class DataInterfaceStub:
     def __init__(self):
         self.data: dict[str, DataObject] = {}

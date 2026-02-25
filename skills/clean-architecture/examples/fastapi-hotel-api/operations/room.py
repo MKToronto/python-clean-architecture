@@ -1,9 +1,7 @@
 import uuid
-from typing import Any
 
-from models.room import DataInterface, Room, RoomCreate, RoomUpdate
-
-DataObject = dict[str, Any]
+from models.room import Room, RoomCreate, RoomUpdate
+from operations.interface import DataInterface
 
 
 def read_all_rooms(data_interface: DataInterface) -> list[Room]:

@@ -83,19 +83,19 @@ T = TypeVar("T")
 def retry(
     retries: int = 3,
     delay: float = 1.0,
-    exceptions: tuple[type[Exception], ...] = (Exception,),
+    backoff: float = 2.0,
 ) -> Callable:
     def decorator(fn: Callable[..., T]) -> Callable[..., T]:
         @functools.wraps(fn)
         def wrapper(*args, **kwargs) -> T:
-            for attempt in range(retries):
+            for attempt in range(1, retries + 1):
                 try:
                     return fn(*args, **kwargs)
-                except exceptions as e:
-                    if attempt == retries - 1:
+                except Exception as e:
+                    if attempt == retries:
                         raise
-                    time.sleep(delay * (2 ** attempt))
-            raise RuntimeError("Unreachable")
+                    time.sleep(delay * (backoff ** (attempt - 1)))
+            raise RuntimeError("All retries failed")
         return wrapper
     return decorator
 ```
@@ -103,14 +103,14 @@ def retry(
 **Usage:**
 
 ```python
-@retry(retries=5, delay=0.5, exceptions=(ConnectionError, TimeoutError))
+@retry(retries=5, delay=0.5)
 def fetch_price(symbol: str) -> float:
     response = requests.get(f"https://api.example.com/price/{symbol}")
     response.raise_for_status()
     return response.json()["price"]
 ```
 
-The `exceptions` parameter is critical — only retry on transient errors, not on `ValueError` or `AuthenticationError` which will always fail. Always narrow the default `(Exception,)` to specific transient types. Catching `Exception` masks bugs like `NameError` and `AttributeError` during the retry window, even though the decorator re-raises after exhaustion (see `references/error-handling.md`). The broad default is a convenience for prototyping, not a production pattern.
+The decorator catches `Exception` broadly — this is one of the rare cases where that is acceptable, because it always re-raises the original error after all retries are exhausted. The re-raise is the safety mechanism. For production code where you need finer exception control, use the `tenacity` library (see below) rather than hand-rolling exception filtering.
 
 ---
 
@@ -170,12 +170,11 @@ result = retry_with_alternatives([
 For production code, use the [`tenacity`](https://github.com/jd/tenacity) library instead of hand-rolling retry logic:
 
 ```python
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 @retry(
-    stop=stop_after_attempt(5),
-    wait=wait_exponential(multiplier=1, min=1, max=60),
-    retry=retry_if_exception_type((ConnectionError, TimeoutError)),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
 )
 def fetch_price(symbol: str) -> float:
     response = requests.get(f"https://api.example.com/price/{symbol}")
@@ -183,7 +182,7 @@ def fetch_price(symbol: str) -> float:
     return response.json()["price"]
 ```
 
-Tenacity handles edge cases (logging, callbacks, async support) that hand-rolled solutions miss.
+Tenacity handles edge cases (logging, callbacks, async support) that hand-rolled solutions miss. For production code, prefer `tenacity` over a custom decorator. If you need to filter by exception type, tenacity offers `retry_if_exception_type((ConnectionError, TimeoutError))` via the `retry` parameter.
 
 ---
 

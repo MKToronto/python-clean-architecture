@@ -67,20 +67,20 @@ Then review the code at `$ARGUMENTS` (or the current working directory if no pat
    ```
    Layers
    ──────
-   API:        routes/booking.py, routes/customer.py
+   API:        routers/booking.py, routers/customer.py
    Logic:      operations/booking.py, operations/customer.py
    Database:   db/db_interface.py, db/models.py, db/database.py
    Unclear:    utils/helpers.py (mixed concerns)
 
    Dependency Flows
    ────────────────
-   routes/booking.py → operations/booking.py → db/db_interface.py    ✓
-   routes/customer.py → operations/customer.py → db/db_interface.py  ✓
-   routes/admin.py → db/models.py                                    ⚠ layer skip
+   routers/booking.py → operations/booking.py → db/db_interface.py    ✓
+   routers/customer.py → operations/customer.py → db/db_interface.py  ✓
+   routers/admin.py → db/models.py                                    ⚠ layer skip
 
    Layer Violations
    ────────────────
-   ⚠ routes/admin.py imports db/models.py directly — should go through operations
+   ⚠ routers/admin.py imports db/models.py directly — should go through operations
    ```
 
    Adapt to the actual project. If it does not follow the three-layer model, show the dependency flow as-is and note what a target architecture would look like. Keep it compact — group similar flows rather than listing every file individually if there are many.

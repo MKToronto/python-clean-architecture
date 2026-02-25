@@ -1,10 +1,7 @@
 import uuid
-from typing import Any
 
 from models.booking import Booking, BookingCreate
-from models.room import DataInterface
-
-DataObject = dict[str, Any]
+from operations.interface import DataInterface
 
 
 def create_booking(

@@ -74,34 +74,34 @@ from typing import Callable, Any
 def retry(
     retries: int = 3,
     delay: float = 1.0,
-    exceptions: tuple[type[Exception], ...] = (Exception,),
+    backoff: float = 2.0,
 ) -> Callable:
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            last_exception: Exception | None = None
-            for attempt in range(retries):
+            for attempt in range(1, retries + 1):
                 try:
                     return func(*args, **kwargs)
-                except exceptions as e:
-                    last_exception = e
-                    wait = delay * (2 ** attempt)
+                except Exception as e:
+                    if attempt == retries:
+                        raise
+                    wait = delay * (backoff ** (attempt - 1))
                     time.sleep(wait)
-            raise last_exception
+            raise RuntimeError("All retries failed")
         return wrapper
     return decorator
 
 
-@retry(retries=3, delay=0.5, exceptions=(ConnectionError, TimeoutError))
+@retry(retries=3, delay=0.5)
 def fetch_data(url: str) -> dict:
     ...
 ```
 
 ### Key design decisions
 
-- **Catch specific exceptions** — always pass a tuple of expected transient failure types (e.g., `ConnectionError, TimeoutError`). The default `(Exception,)` exists only as a convenience — in production code, always narrow it. Catching `Exception` masks bugs like `NameError` and `AttributeError` (see `error-handling.md`). The only defense for the broad default is that retry re-raises after exhaustion, but this still hides bugs during the retry window
-- **Exponential backoff** — `delay * (2 ** attempt)` prevents hammering a failing service
-- **Re-raise the last exception** — if all retries fail, the caller sees the original error, not a generic one
+- **Catch `Exception` broadly, re-raise after exhaustion** — this is one of the rare cases where catching `Exception` is acceptable, because the decorator always re-raises the original error if all retries fail. The re-raise is the safety mechanism. For production code with many exception types, consider the `tenacity` library which offers `retry_if_exception_type` for finer control (see `patterns/retry.md`)
+- **Exponential backoff** — `delay * (backoff ** (attempt - 1))` prevents hammering a failing service. With default values: 1s → 2s → 4s
+- **Re-raise the original exception** — if all retries fail, the caller sees the real error, not a generic one
 
 ### Async version
 
@@ -114,20 +114,20 @@ from typing import Callable, Any
 def async_retry(
     retries: int = 3,
     delay: float = 1.0,
-    exceptions: tuple[type[Exception], ...] = (Exception,),
+    backoff: float = 2.0,
 ) -> Callable:
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
-            last_exception: Exception | None = None
-            for attempt in range(retries):
+            for attempt in range(1, retries + 1):
                 try:
                     return await func(*args, **kwargs)
-                except exceptions as e:
-                    last_exception = e
-                    wait = delay * (2 ** attempt)
+                except Exception as e:
+                    if attempt == retries:
+                        raise
+                    wait = delay * (backoff ** (attempt - 1))
                     await asyncio.sleep(wait)
-            raise last_exception
+            raise RuntimeError("All retries failed")
         return wrapper
     return decorator
 ```
@@ -248,7 +248,7 @@ Decorators are best for concerns that apply uniformly across many functions. If 
 ### Do
 
 - Always use `@functools.wraps(func)` on the wrapper function
-- Always narrow the `exceptions` parameter in retry decorators — the default `(Exception,)` masks bugs; specify transient error types like `ConnectionError, TimeoutError` (see `patterns/retry.md` and `error-handling.md`)
+- In retry decorators, catching `Exception` broadly is acceptable because the decorator re-raises after exhaustion — the re-raise is the safety mechanism. For finer control in production, use the `tenacity` library (see `patterns/retry.md`)
 - Keep decorators focused on one concern (logging OR retry, not both)
 - Type hint decorator parameters and return types
 - Use parameterized decorators when the decorator needs configuration
