@@ -105,6 +105,9 @@ When encountering these code smells, apply the corresponding pattern:
 | Complex object with many optional parts | Builder | Fluent API with `Self` return type, `.build()` returns frozen product |
 | Multiple DB writes that must succeed or fail together | Unit of Work | Context manager wrapping transaction: commit on success, rollback on error |
 | Need exactly one instance of a shared resource | Singleton | Module-level instance (preferred), or metaclass with `_instances` dict |
+| Object behaves differently depending on internal state | State | Protocol-based state objects, context delegates to current state |
+| Incompatible interface from external library | Adapter | Protocol interface + `functools.partial` for single-method adaptation |
+| Client coupled to complex subsystem details | Facade | Simplified interface class, `functools.partial` to bind dependencies |
 
 ### Default preferences for all patterns:
 
@@ -189,7 +192,7 @@ For detailed guidance beyond this overview, consult:
 - **`references/pattern-matching.md`** — Structural pattern matching (`match`/`case`): literal, capture, OR, sequence, class, mapping patterns, guard clauses
 
 **Pythonic Patterns:**
-- **`references/pythonic-patterns.md`** — Quick reference lookup table for all 17 patterns (use for reviews and pattern selection)
+- **`references/pythonic-patterns.md`** — Quick reference lookup table for all 20 patterns (use for reviews and pattern selection)
 
 **Pythonic Patterns (full progressions from OOP → functional):**
 - **`references/patterns/strategy.md`** — Callable type alias, closures, functools.partial
@@ -209,6 +212,12 @@ For detailed guidance beyond this overview, consult:
 - **`references/patterns/builder.md`** — Fluent API with Self return type, mutable builder to immutable product
 - **`references/patterns/unit-of-work.md`** — Transaction context managers, automatic rollback, repository composition
 - **`references/patterns/singleton.md`** — Module-level instance (preferred), metaclass approach, thread safety
+- **`references/patterns/state.md`** — Protocol-based state objects, context delegation, state transitions
+- **`references/patterns/adapter.md`** — Object adapter (composition), function adapter (partial), Protocol interface
+- **`references/patterns/facade.md`** — Simplified interface to complex subsystems, partial for controller binding
+
+**Advanced Error Handling:**
+- **`references/monadic-error-handling.md`** — Railway-oriented programming: Result types, `@safe` decorator, `flow()`/`bind()` composition (functional alternative to exceptions)
 
 ### Example Files
 

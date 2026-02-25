@@ -411,3 +411,82 @@ debug = True
 When a class is needed, use a metaclass with `_instances` dict.
 
 → Full reference: `patterns/singleton.md`
+
+### State
+
+**Recognize:** Object behaves differently depending on its internal state; growing if/elif chains checking state before every action.
+
+**Pythonic implementation:** Protocol-based state objects. The context delegates actions to the current state, and state objects trigger transitions:
+
+```python
+class DocumentState(Protocol):
+    def edit(self, doc: "DocumentContext") -> None: ...
+    def review(self, doc: "DocumentContext") -> None: ...
+    def finalize(self, doc: "DocumentContext") -> None: ...
+
+class DraftState:
+    def edit(self, doc: "DocumentContext") -> None:
+        doc.content.append("New content.")
+    def review(self, doc: "DocumentContext") -> None:
+        doc.state = ReviewedState()
+    def finalize(self, doc: "DocumentContext") -> None:
+        print("Cannot finalize — review first.")
+
+class DocumentContext:
+    def __init__(self) -> None:
+        self.state: DocumentState = DraftState()
+    def edit(self) -> None:
+        self.state.edit(self)
+```
+
+→ Full reference: `patterns/state.md`
+
+### Adapter
+
+**Recognize:** External library's interface doesn't match what your code expects.
+
+**Pythonic implementation (preferred):** Function + `functools.partial` for single-method adaptation. Protocol + composition class for multi-method adaptation:
+
+```python
+from typing import Any, Callable
+from functools import partial
+
+ConfigGetter = Callable[[str], Any]
+
+def get_from_bs(soup: BeautifulSoup, key: str, default: Any = None) -> Any | None:
+    value = soup.find(key)
+    return value.get_text() if value else default
+
+# Bind the external dependency — result matches ConfigGetter signature
+bs_adapter = partial(get_from_bs, soup)
+experiment = Experiment(bs_adapter)
+```
+
+Never use class-based (inheritance) adapters — they override the adaptee's methods with different semantics.
+
+→ Full reference: `patterns/adapter.md`
+
+### Facade
+
+**Recognize:** Application code is coupled to a complex subsystem's internal details (connections, protocols, device management).
+
+**Pythonic implementation:** A class that exposes a small number of high-level methods hiding subsystem complexity. Use `functools.partial` to bind the facade to controller functions:
+
+```python
+class IoTFacade:
+    def __init__(self, service: IoTService) -> None:
+        self.service = service
+        self.speaker = SmartSpeaker(id="speaker_1")
+        self.service.register_device(self.speaker)
+
+    def power_speaker(self, on: bool) -> None:
+        device = self.service.get_device(self.speaker.id)
+        connection = Connection(device.ip, device.port)
+        msg = Message(sender=self.speaker.id, content="switch_on" if on else "switch_off")
+        connection.send(msg.to_b64())
+
+# Composition root: bind facade to controller, pass to GUI
+power_fn = partial(power_speaker, facade)  # Callable[[bool], None]
+```
+
+→ Full reference: `patterns/facade.md`
