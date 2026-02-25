@@ -325,7 +325,7 @@ class EmailAddress:
 class Event[T = str]:
     type: EventType
     data: T
-    timestamp: datetime = datetime.now()
+    timestamp: datetime = field(default_factory=datetime.now)
 
 class EventStore[T]:
     def append(self, event: Event[T]) -> None: ...

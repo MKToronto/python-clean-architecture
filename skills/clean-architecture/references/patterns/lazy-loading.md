@@ -201,6 +201,6 @@ async def predict(text: str):
 
 ## Relationship to Other Patterns
 
-- **Singleton** (`patterns/singleton.md`) — module-level lazy instance is both a singleton and lazy loading
-- **Facade** (`patterns/facade.md`) — a facade can lazily initialize subsystem components
-- **Registry** (`patterns/registry.md`) — plugin registry can use lazy loading for plugin discovery
+- **Singleton** (`singleton.md`) — module-level lazy instance is both a singleton and lazy loading
+- **Facade** (`facade.md`) — a facade can lazily initialize subsystem components
+- **Registry** (`registry.md`) — plugin registry can use lazy loading for plugin discovery

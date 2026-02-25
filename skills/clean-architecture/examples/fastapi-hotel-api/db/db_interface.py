@@ -15,7 +15,7 @@ class DBInterface:
         self.db_class = db_class
 
     def read_by_id(self, id: str) -> DataObject:
-        obj = self.db_session.query(self.db_class).get(id)
+        obj = self.db_session.get(self.db_class, id)
         if obj is None:
             raise KeyError(f"Not found: {id}")
         return to_dict(obj)
@@ -31,7 +31,7 @@ class DBInterface:
         return to_dict(obj)
 
     def update(self, id: str, data: DataObject) -> DataObject:
-        obj = self.db_session.query(self.db_class).get(id)
+        obj = self.db_session.get(self.db_class, id)
         if obj is None:
             raise KeyError(f"Not found: {id}")
         for key, value in data.items():
@@ -40,7 +40,7 @@ class DBInterface:
         return to_dict(obj)
 
     def delete(self, id: str) -> None:
-        obj = self.db_session.query(self.db_class).get(id)
+        obj = self.db_session.get(self.db_class, id)
         if obj is None:
             raise KeyError(f"Not found: {id}")
         self.db_session.delete(obj)

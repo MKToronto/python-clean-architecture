@@ -161,4 +161,4 @@ This is the payoff of designing against an interface: compatible systems require
 
 - **Facade** simplifies a complex subsystem into a smaller interface. **Adapter** translates one interface to another — the complexity stays the same, just the shape changes.
 - **Bridge** separates two hierarchies that vary independently. **Adapter** connects two existing, incompatible interfaces.
-- **Function Wrapper** (see `patterns/functional.md`) is the simplest form of adapter — a function that calls another function with translated arguments.
+- **Function Wrapper** (see `functional.md`) is the simplest form of adapter — a function that calls another function with translated arguments.

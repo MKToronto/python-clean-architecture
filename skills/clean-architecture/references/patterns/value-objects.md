@@ -139,7 +139,7 @@ EmailAddress("not-an-email")  # ValueError
 
 ## Relationship to Other Principles
 
-- Fixes **Primitive Obsession** (code-quality.md rule)
-- Supports **Start with the Data** (design-principles.md) — model domain concepts as types
+- Fixes **Primitive Obsession** (`../code-quality.md` rule)
+- Supports **Start with the Data** (`../design-principles.md`) — model domain concepts as types
 - Works with **Pydantic models** — value objects can be fields in Pydantic `BaseModel` classes
 - Supports **High Cohesion** — validation lives with the data it protects

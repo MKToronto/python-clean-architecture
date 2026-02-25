@@ -69,7 +69,6 @@ The Pythonic implementation uses `__enter__`/`__exit__` for automatic transactio
 
 ```python
 import sqlite3
-from typing import Optional
 
 
 class Repository:
@@ -91,8 +90,8 @@ class Repository:
 class UnitOfWork:
     def __init__(self, db_name: str = "example.db"):
         self.db_name = db_name
-        self.connection: Optional[sqlite3.Connection] = None
-        self.repository: Optional[Repository] = None
+        self.connection: sqlite3.Connection | None = None
+        self.repository: Repository | None = None
 
     def __enter__(self) -> "UnitOfWork":
         self.connection = sqlite3.connect(self.db_name)

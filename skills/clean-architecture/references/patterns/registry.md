@@ -424,4 +424,4 @@ def load_plugins_safely(plugin_names: list[str]) -> None:
             logging.exception(f"Failed to load plugin: {name}")
 ```
 
-For a complete plugin architecture guide (including Protocol-based interfaces, config-driven creation, and self-registering plugins), see `patterns/plugin-architecture.md`.
+For a complete plugin architecture guide (including Protocol-based interfaces, config-driven creation, and self-registering plugins), see `plugin-architecture.md`.

@@ -22,7 +22,7 @@ Mutable state overwrites history. Event sourcing preserves it.
 An immutable record of something that happened. Generic over the data type:
 
 ```python
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 
@@ -36,7 +36,7 @@ class EventType(StrEnum):
 class Event[T = str]:
     type: EventType
     data: T
-    timestamp: datetime = datetime.now()
+    timestamp: datetime = field(default_factory=datetime.now)
 ```
 
 **Key properties:**

@@ -108,6 +108,7 @@ python-clean-architecture/
 │   ├── plugin.json                         Plugin manifest
 │   └── marketplace.json                    Marketplace catalog
 ├── README.md                               This file
+├── LICENSE                                 MIT license
 ├── commands/
 │   ├── review-architecture.md              Full architecture review
 │   ├── check-quality.md                    Quick 17-rule quality check
@@ -124,13 +125,22 @@ python-clean-architecture/
         │   ├── design-principles.md        7 principles with refactoring recipes
         │   ├── layered-architecture.md     3-layer FastAPI guide with full code
         │   ├── testable-api.md             Stub-based testing strategy
+        │   ├── testing-advanced.md         Pytest, property-based, stateful testing
+        │   ├── rest-api-design.md          HTTP methods, status codes, OpenAPI
         │   ├── code-quality.md             17 rules + code review checklist
         │   ├── classes-and-dataclasses.md  Classes vs dataclasses decision guide
         │   ├── function-design.md          Pure functions, closures, partial, HOFs
         │   ├── data-structures.md          Choosing the right data structure
         │   ├── error-handling.md           Custom exceptions, context managers
-        │   ├── types-and-type-hints.md    Python's type system, Callable types
+        │   ├── monadic-error-handling.md   Railway-oriented Result types
+        │   ├── types-and-type-hints.md     Python's type system, Callable types
         │   ├── project-organization.md     Modules, packages, folder structure
+        │   ├── context-managers.md         __enter__/__exit__, @contextmanager
+        │   ├── decorators.md               Retry, logging, timing, parameterized
+        │   ├── async-patterns.md           Async/await, gather, TaskGroup
+        │   ├── pydantic-validation.md      Pydantic v2 validators, ConfigDict
+        │   ├── pattern-matching.md         match/case structural patterns
+        │   ├── pythonic-patterns.md        Quick reference for all 23 patterns
         │   └── patterns/
         │       ├── strategy.md             Full OOP → functional progression
         │       ├── abstract-factory.md     Tuples of functions + partial
@@ -140,7 +150,19 @@ python-clean-architecture/
         │       ├── registry.md             Dict mapping, importlib plugins
         │       ├── template-method.md      Free function + Protocol
         │       ├── pipeline.md             Chain of Responsibility, compose
-        │       └── functional.md           Callback, Wrapper, Builder
+        │       ├── functional.md           Callback, Wrapper, Builder
+        │       ├── value-objects.md        Validated domain primitives
+        │       ├── event-sourcing.md       Immutable events, projections
+        │       ├── cqrs.md                 Separate read/write models
+        │       ├── builder.md              Fluent API, frozen product
+        │       ├── unit-of-work.md         Transaction context managers
+        │       ├── singleton.md            Module-level instance, metaclass
+        │       ├── state.md                Protocol-based state objects
+        │       ├── adapter.md              Composition + partial adaptation
+        │       ├── facade.md               Simplified subsystem interface
+        │       ├── retry.md                Exponential backoff decorator
+        │       ├── lazy-loading.md         cache, cached_property, generators
+        │       └── plugin-architecture.md  Config-driven, importlib discovery
         └── examples/
             └── fastapi-hotel-api/          Complete working FastAPI project
                 ├── main.py
@@ -180,8 +202,9 @@ Each layer depends only on the layer below. The router is the composition root w
 - Dict mapping over if/elif chains
 - Readability over dogmatic functional purity
 
-11 design patterns implemented the Pythonic way:
+23 design patterns implemented the Pythonic way:
 
+**Core Patterns:**
 - **Strategy** — `Callable` type alias, pass functions as args
 - **Abstract Factory** — Tuples of functions + `functools.partial`
 - **Bridge** — `Callable` type alias replaces abstract reference
@@ -191,3 +214,17 @@ Each layer depends only on the layer below. The router is the composition root w
 - **Template Method** — Free function + Protocol parameter
 - **Pipeline** — `functools.reduce` for composition
 - **Callback / Wrapper / Builder** — Functional patterns for event handling, interface translation, and configuration
+
+**Extended Patterns:**
+- **Value Objects** — Subclass built-in types with `__new__` validation, or frozen dataclass
+- **Event Sourcing** — Immutable events, append-only EventStore, projection functions
+- **CQRS** — Separate write model + read projection, projector function after writes
+- **Builder** — Fluent API with `Self` return type, `.build()` returns frozen product
+- **Unit of Work** — Context manager wrapping transaction: commit on success, rollback on error
+- **Singleton** — Module-level instance (preferred), or metaclass with `_instances` dict
+- **State** — Protocol-based state objects, context delegates to current state
+- **Adapter** — Protocol interface + `functools.partial` for single-method adaptation
+- **Facade** — Simplified interface class, `functools.partial` to bind dependencies
+- **Retry** — `@retry` decorator with exponential backoff, fallback strategies
+- **Lazy Loading** — `functools.cache`, `cached_property`, generators, `__getattr__`
+- **Plugin Architecture** — Config-driven creation, `importlib` auto-discovery, self-registering modules

@@ -16,7 +16,7 @@ def create_booking(
     nights = (data.to_date - data.from_date).days
     price = nights * room["price"]
 
-    booking_data = data.dict()
+    booking_data = data.model_dump()
     booking_data["id"] = str(uuid.uuid4())
     booking_data["price"] = price
     created = data_interface.create(booking_data)

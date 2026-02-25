@@ -225,7 +225,7 @@ For very large systems, use `importlib.metadata` entry points — the standard m
 
 ## Relationship to Other Patterns
 
-- **Registry** (`patterns/registry.md`) — plugin architecture extends registry with dynamic discovery
-- **Strategy** (`patterns/strategy.md`) — plugins can provide strategy functions registered at load time
-- **Adapter** (`patterns/adapter.md`) — plugins may adapt external interfaces to your Protocol
+- **Registry** (`registry.md`) — plugin architecture extends registry with dynamic discovery
+- **Strategy** (`strategy.md`) — plugins can provide strategy functions registered at load time
+- **Adapter** (`adapter.md`) — plugins may adapt external interfaces to your Protocol
 - **Separate Creation from Use** (Principle 5) — the loader creates; application code uses

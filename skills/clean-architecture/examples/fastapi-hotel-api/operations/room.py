@@ -17,7 +17,7 @@ def read_room(room_id: str, data_interface: DataInterface) -> Room:
 
 
 def create_room(data: RoomCreate, data_interface: DataInterface) -> Room:
-    room_data = data.dict()
+    room_data = data.model_dump()
     room_data["id"] = str(uuid.uuid4())
     created = data_interface.create(room_data)
     return Room(**created)
@@ -26,7 +26,7 @@ def create_room(data: RoomCreate, data_interface: DataInterface) -> Room:
 def update_room(
     room_id: str, data: RoomUpdate, data_interface: DataInterface
 ) -> Room:
-    update_data = data.dict(exclude_none=True)
+    update_data = data.model_dump(exclude_none=True)
     updated = data_interface.update(room_id, update_data)
     return Room(**updated)
 

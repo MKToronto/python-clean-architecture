@@ -209,6 +209,6 @@ Tenacity handles edge cases (logging, callbacks, async support) that hand-rolled
 
 ## Relationship to Other Patterns
 
-- **Decorator** (`decorators.md`) — the `@retry` decorator uses `functools.wraps` and parameterized decorator pattern
-- **Error Handling** (`error-handling.md`) — retry is a complement to exception handling, not a replacement; catch specific exceptions
-- **Strategy** (`patterns/strategy.md`) — fallback alternatives use the same pattern of passing functions as arguments
+- **Decorator** (`../decorators.md`) — the `@retry` decorator uses `functools.wraps` and parameterized decorator pattern
+- **Error Handling** (`../error-handling.md`) — retry is a complement to exception handling, not a replacement; catch specific exceptions
+- **Strategy** (`strategy.md`) — fallback alternatives use the same pattern of passing functions as arguments
