@@ -1,6 +1,6 @@
 ---
 name: Python Clean Architecture
-description: This skill should be used when the user asks to "scaffold a FastAPI project", "set up clean architecture", "refactor to clean architecture", "add a new endpoint", "add a router", "add a use case", "add a repository", "review my code structure", "apply design patterns in Python", "decouple my code", "improve code quality", "make my code testable", or mentions layered architecture, dependency injection, Protocol-based design, or Pythonic design patterns for Python/FastAPI projects.
+description: This skill should be used when the user asks to "scaffold a FastAPI project", "set up clean architecture", "refactor to clean architecture", "add a new endpoint", "add a router", "add an operation", "add a repository", "review my code structure", "apply design patterns in Python", "decouple my code", "improve code quality", "make my code testable", or mentions layered architecture, dependency injection, Protocol-based design, or Pythonic design patterns for Python/FastAPI projects.
 version: 0.6.0
 ---
 
@@ -14,7 +14,7 @@ Provide Clean Architecture guidance for Python projects, specifically FastAPI AP
 
 - Scaffolding new FastAPI projects with clean separation of concerns
 - Refactoring existing Python code to reduce coupling and increase cohesion
-- Adding new components (endpoints, use cases, repositories, models)
+- Adding new components (endpoints, operations, repositories, models)
 - Reviewing code for design quality and Pythonic idiom adherence
 - Making code testable through dependency injection and Protocol-based abstractions
 
@@ -68,7 +68,7 @@ class Customer(BaseModel):
     email: str
 ```
 
-Use `**data.dict()` to unpack Pydantic models into DataObject dicts. Use `exclude_none=True` on update models for partial updates.
+Use `**data.model_dump()` to unpack Pydantic models into DataObject dicts. Use `exclude_none=True` on update models for partial updates.
 
 ## Seven Design Principles
 
@@ -90,7 +90,7 @@ When encountering these code smells, apply the corresponding pattern:
 |---|---|---|
 | Long if/elif switching behavior | Strategy | `Callable` type alias, pass functions as args |
 | Need to create objects from config/JSON | Registry | `dict[str, Callable]` mapping + `**kwargs` unpacking |
-| Event/notification side effects mixed with core logic | Pub/Sub | `subscribe(event, handler)` / `post_event(event, data)` dict-based |
+| Event/notification side effects mixed with core logic | Notification (Pub/Sub) | `subscribe(event, handler)` / `post_event(event, data)` dict-based |
 | Duplicated algorithm across classes | Template Method | Extract to free function + Protocol parameter |
 | Two independent hierarchies that vary | Bridge | `Callable` type alias replaces abstract reference |
 | Need undo/batch/queue operations | Command | Functions returning undo closures |
@@ -126,7 +126,7 @@ When asked to create a new FastAPI project, generate this structure:
 ```
 project_name/
 ├── src/
-│   ├── main.py              # FastAPI app, include_router, startup events
+│   ├── main.py              # FastAPI app, include_router, lifespan handler
 │   ├── routers/
 │   │   ├── __init__.py
 │   │   └── {entity}.py      # APIRouter, endpoint functions
@@ -156,6 +156,8 @@ class DataInterfaceStub:
     def __init__(self):
         self.data: dict[str, DataObject] = {}
     def read_by_id(self, id: str) -> DataObject:
+        if id not in self.data:
+            raise KeyError(f"Not found: {id}")
         return self.data[id]
     def read_all(self) -> list[DataObject]:
         return list(self.data.values())
@@ -163,9 +165,13 @@ class DataInterfaceStub:
         self.data[data["id"]] = data
         return data
     def update(self, id: str, data: DataObject) -> DataObject:
+        if id not in self.data:
+            raise KeyError(f"Not found: {id}")
         self.data[id].update(data)
         return self.data[id]
     def delete(self, id: str) -> None:
+        if id not in self.data:
+            raise KeyError(f"Not found: {id}")
         del self.data[id]
 ```
 

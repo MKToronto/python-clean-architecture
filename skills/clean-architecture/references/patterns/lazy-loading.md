@@ -171,9 +171,10 @@ def get_model() -> Model:
 **Usage in FastAPI:**
 
 ```python
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     start_preloading()
+    yield
 
 @app.get("/predict")
 async def predict(text: str):

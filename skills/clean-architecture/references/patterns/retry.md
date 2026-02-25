@@ -116,7 +116,7 @@ def fetch_price(symbol: str) -> float:
     return response.json()["price"]
 ```
 
-The `exceptions` parameter is critical — only retry on transient errors, not on `ValueError` or `AuthenticationError` which will always fail.
+The `exceptions` parameter is critical — only retry on transient errors, not on `ValueError` or `AuthenticationError` which will always fail. The default `(Exception,)` is intentionally broad as a safety net since retry re-raises after exhaustion, but narrowing to specific exception types is best practice for production code.
 
 ---
 

@@ -55,7 +55,7 @@ class RoomUpdate(BaseModel):
     price: int | None = None
 ```
 
-Use `data.dict(exclude_none=True)` to get only the fields that were actually provided.
+Use `data.model_dump(exclude_none=True)` to get only the fields that were actually provided.
 
 ---
 
@@ -183,7 +183,7 @@ def read_room(room_id: str, data_interface: DataInterface) -> Room:
     return Room(**room)
 
 def create_room(data: RoomCreate, data_interface: DataInterface) -> Room:
-    room_data = data.dict()
+    room_data = data.model_dump()
     room_data["id"] = str(uuid.uuid4())
     created = data_interface.create(room_data)
     return Room(**created)
@@ -203,7 +203,7 @@ def create_booking(data: BookingCreate, data_interface: DataInterface,
     nights = (data.to_date - data.from_date).days
     price = nights * room["price"]
 
-    booking_data = data.dict()
+    booking_data = data.model_dump()
     booking_data["id"] = str(uuid.uuid4())
     booking_data["price"] = price
     created = data_interface.create(booking_data)
@@ -254,15 +254,17 @@ def delete_room(room_id: str):
 ### Main App
 
 ```python
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from db.database import engine, Base
 from routers import rooms, customers, bookings
 
-app = FastAPI()
-
-@app.on_event("startup")
-def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(rooms.router)
 app.include_router(customers.router)

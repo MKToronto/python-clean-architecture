@@ -7,19 +7,14 @@ Handle errors precisely. Catch only what you can act on, let everything else pro
 Define domain-specific exceptions that describe exactly what went wrong. Never raise generic `Exception` or `ValueError` for domain logic.
 
 ```python
-from dataclasses import dataclass
-
-
-@dataclass
 class NotFoundError(Exception):
     """Raised when a requested entity does not exist."""
-    entity_id: str
+    pass
 
 
-@dataclass
 class NotAuthorizedError(Exception):
     """Raised when access to a resource is denied."""
-    entity_id: str
+    pass
 ```
 
 Raise these exceptions at the point where the error is detected, inside the business logic layer:
@@ -33,12 +28,12 @@ def fetch_blog(blog_id: str) -> Blog:
     connection.close()
 
     if result is None:
-        raise NotFoundError(entity_id=blog_id)
+        raise NotFoundError(f"Blog not found: {blog_id}")
 
     blog = result_to_blog(result)
 
     if not blog.public:
-        raise NotAuthorizedError(entity_id=blog_id)
+        raise NotAuthorizedError(f"Access denied: {blog_id}")
 
     return blog
 ```
@@ -126,12 +121,12 @@ def fetch_blog(blog_id: str) -> Blog:
         result = cursor.fetchone()
 
         if result is None:
-            raise NotFoundError(entity_id=blog_id)
+            raise NotFoundError(f"Blog not found: {blog_id}")
 
         blog = result_to_blog(result)
 
         if not blog.public:
-            raise NotAuthorizedError(entity_id=blog_id)
+            raise NotAuthorizedError(f"Access denied: {blog_id}")
 
         return blog
     finally:
@@ -181,12 +176,12 @@ def fetch_blog(blog_id: str) -> Blog:
         result = cursor.fetchone()
 
     if result is None:
-        raise NotFoundError(entity_id=blog_id)
+        raise NotFoundError(f"Blog not found: {blog_id}")
 
     blog = result_to_blog(result)
 
     if not blog.public:
-        raise NotAuthorizedError(entity_id=blog_id)
+        raise NotAuthorizedError(f"Access denied: {blog_id}")
 
     return blog
 ```
@@ -217,12 +212,12 @@ def fetch_blog(blog_id: str) -> Blog:
         result = cursor.fetchone()
 
     if result is None:
-        raise NotFoundError(entity_id=blog_id)
+        raise NotFoundError(f"Blog not found: {blog_id}")
 
     blog = result_to_blog(result)
 
     if not blog.public:
-        raise NotAuthorizedError(entity_id=blog_id)
+        raise NotAuthorizedError(f"Access denied: {blog_id}")
 
     return blog
 ```

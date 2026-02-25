@@ -153,7 +153,7 @@ If you cannot find a home for a function, that is a design signal. The function 
 
 Structure packages around business domains, not around technical types. The folder tree should read like a table of contents for the application, not like a programming textbook.
 
-### BAD: Organized by Technical Type
+### Architecture-First (by Technical Type)
 
 ```
 src/
@@ -171,9 +171,11 @@ src/
         invoice_repo.py
 ```
 
-This forces a developer working on "contracts" to jump between three unrelated folders. Adding a new domain concept requires touching every technical folder.
+Top-level folders represent architectural layers. This is the approach used in the skill's scaffolding template and the paid course. It makes the architecture immediately visible.
 
-### GOOD: Organized by Business Domain
+**Trade-off:** A developer working on "contracts" must jump between three folders.
+
+### Domain-First (by Business Domain)
 
 ```
 src/
@@ -191,7 +193,9 @@ src/
         repository.py
 ```
 
-Now all contract-related code lives together. A developer can understand the contracts domain by reading one folder.
+Top-level folders represent business domains. All contract-related code lives together — a developer can understand the contracts domain by reading one folder.
+
+**Trade-off:** The architecture is less visible at the top level; each domain folder must replicate the same internal structure.
 
 ### Domain Grouping Examples
 

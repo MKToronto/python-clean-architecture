@@ -70,35 +70,35 @@ from typing import Callable, Any
 
 
 def retry(
-    max_retries: int = 3,
-    base_delay: float = 1.0,
+    retries: int = 3,
+    delay: float = 1.0,
     exceptions: tuple[type[Exception], ...] = (Exception,),
 ) -> Callable:
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             last_exception: Exception | None = None
-            for attempt in range(max_retries):
+            for attempt in range(retries):
                 try:
                     return func(*args, **kwargs)
                 except exceptions as e:
                     last_exception = e
-                    delay = base_delay * (2 ** attempt)
-                    time.sleep(delay)
+                    wait = delay * (2 ** attempt)
+                    time.sleep(wait)
             raise last_exception
         return wrapper
     return decorator
 
 
-@retry(max_retries=3, base_delay=0.5, exceptions=(ConnectionError, TimeoutError))
+@retry(retries=3, delay=0.5, exceptions=(ConnectionError, TimeoutError))
 def fetch_data(url: str) -> dict:
     ...
 ```
 
 ### Key design decisions
 
-- **Catch specific exceptions** — pass a tuple of expected failure types, never retry on all exceptions
-- **Exponential backoff** — `base_delay * (2 ** attempt)` prevents hammering a failing service
+- **Catch specific exceptions** — pass a tuple of expected failure types; the default `(Exception,)` is intentionally broad as a safety net since retry re-raises after exhaustion, but narrowing to specific exceptions (e.g., `ConnectionError, TimeoutError`) is best practice
+- **Exponential backoff** — `delay * (2 ** attempt)` prevents hammering a failing service
 - **Re-raise the last exception** — if all retries fail, the caller sees the original error, not a generic one
 
 ### Async version
@@ -110,21 +110,21 @@ from typing import Callable, Any
 
 
 def async_retry(
-    max_retries: int = 3,
-    base_delay: float = 1.0,
+    retries: int = 3,
+    delay: float = 1.0,
     exceptions: tuple[type[Exception], ...] = (Exception,),
 ) -> Callable:
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             last_exception: Exception | None = None
-            for attempt in range(max_retries):
+            for attempt in range(retries):
                 try:
                     return await func(*args, **kwargs)
                 except exceptions as e:
                     last_exception = e
-                    delay = base_delay * (2 ** attempt)
-                    await asyncio.sleep(delay)
+                    wait = delay * (2 ** attempt)
+                    await asyncio.sleep(wait)
             raise last_exception
         return wrapper
     return decorator
@@ -177,7 +177,7 @@ def decorator(param):
     return actual_decorator
 ```
 
-The retry decorator above is a parameterized decorator — `retry(max_retries=3)` returns the actual decorator, which is then applied to the function.
+The retry decorator above is a parameterized decorator — `retry(retries=3)` returns the actual decorator, which is then applied to the function.
 
 ---
 
@@ -188,12 +188,12 @@ Multiple decorators apply bottom-up (closest to the function runs first):
 ```python
 @log_calls      # 3. logs the retry-wrapped, timed function
 @timed          # 2. times the retry-wrapped function
-@retry(max_retries=3)  # 1. adds retry behavior to the original function
+@retry(retries=3)  # 1. adds retry behavior to the original function
 def fetch_data(url: str) -> dict:
     ...
 ```
 
-The execution order is: `log_calls(timed(retry(max_retries=3)(fetch_data)))`.
+The execution order is: `log_calls(timed(retry(retries=3)(fetch_data)))`.
 
 ---
 
@@ -246,7 +246,7 @@ Decorators are best for concerns that apply uniformly across many functions. If 
 ### Do
 
 - Always use `@functools.wraps(func)` on the wrapper function
-- Catch specific exceptions in retry decorators, never `Exception`
+- Catch specific exceptions in retry decorators — narrowing from the default `(Exception,)` is best practice (see `patterns/retry.md`)
 - Keep decorators focused on one concern (logging OR retry, not both)
 - Type hint decorator parameters and return types
 - Use parameterized decorators when the decorator needs configuration

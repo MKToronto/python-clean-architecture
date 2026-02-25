@@ -58,7 +58,7 @@ def fetch_blog_from_db(blog_id: str) -> dict:
     cursor.execute("SELECT * FROM blogs WHERE id = ?", (blog_id,))
     result = cursor.fetchone()
     if result is None:
-        raise NotFoundError(entity_id=blog_id)
+        raise NotFoundError(f"Blog not found: {blog_id}")
     return result
 
 # Without @safe: raises NotFoundError
@@ -94,7 +94,7 @@ def blog_to_dict(row: tuple) -> dict:
 @safe
 def verify_access(blog: dict) -> dict:
     if not blog.get("public"):
-        raise NotAuthorizedError(entity_id=blog["id"])
+        raise NotAuthorizedError(f"Access denied: {blog['id']}")
     return blog
 ```
 
@@ -108,9 +108,9 @@ match result:
     case Success(blog):
         print(f"Found blog: {blog['title']}")
     case Failure(NotFoundError() as e):
-        print(f"404: Blog {e.entity_id} not found")
+        print(f"404: {e}")
     case Failure(NotAuthorizedError() as e):
-        print(f"403: Access denied to {e.entity_id}")
+        print(f"403: {e}")
     case Failure(error):
         print(f"500: Unexpected error: {error}")
 ```
@@ -127,10 +127,10 @@ def fetch_blog(blog_id: str) -> Blog:
         cursor.execute("SELECT * FROM blogs WHERE id = ?", (blog_id,))
         result = cursor.fetchone()
     if result is None:
-        raise NotFoundError(entity_id=blog_id)
+        raise NotFoundError(f"Blog not found: {blog_id}")
     blog = result_to_blog(result)
     if not blog.public:
-        raise NotAuthorizedError(entity_id=blog_id)
+        raise NotAuthorizedError(f"Access denied: {blog_id}")
     return blog
 
 # Caller must know to catch NotFoundError and NotAuthorizedError

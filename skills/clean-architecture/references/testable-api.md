@@ -153,15 +153,13 @@ class AlwaysEmptyStub(DataInterfaceStub):
 Define domain-specific exceptions as dataclasses:
 
 ```python
-@dataclass
 class NotFoundError(Exception):
-    entity: str
-    id: str
+    """Raised when a requested entity does not exist."""
+    pass
 
-@dataclass
 class NotAuthorizedError(Exception):
-    entity: str
-    id: str
+    """Raised when access to a resource is denied."""
+    pass
 ```
 
 ### Operations Raise Domain Exceptions
@@ -171,7 +169,7 @@ def read_room(room_id: str, data_interface: DataInterface) -> Room:
     try:
         room = data_interface.read_by_id(room_id)
     except KeyError:
-        raise NotFoundError(entity="room", id=room_id)
+        raise NotFoundError(f"Room not found: {room_id}")
     return Room(**room)
 ```
 
@@ -272,9 +270,8 @@ Use `pytest.raises` to verify that the correct exception is raised with the corr
 ```python
 def test_read_nonexistent_room_raises_not_found():
     stub = DataInterfaceStub()
-    with pytest.raises(NotFoundError) as exc_info:
+    with pytest.raises(NotFoundError, match="nonexistent-id"):
         read_room("nonexistent-id", stub)
-    assert exc_info.value.entity_id == "nonexistent-id"
 
 
 def test_create_booking_invalid_room_raises_not_found():

@@ -21,7 +21,7 @@ Conventions and best practices for designing RESTful APIs with FastAPI. These gu
 ```python
 @router.patch("/{item_id}")
 async def update_item(item_id: str, data: ItemUpdate):
-    return operations.update(item_id, data.dict(exclude_none=True), db)
+    return operations.update(item_id, data.model_dump(exclude_none=True), db)
 ```
 
 ---
@@ -160,7 +160,7 @@ FastAPI auto-generates OpenAPI docs from type hints and Pydantic models. Enhance
 @router.post("/", status_code=201, response_model=Customer, summary="Create a customer")
 async def create_customer(data: CustomerCreate):
     """Create a new customer with name and email. Returns the created customer with generated ID."""
-    return operations.create(data.dict(), db)
+    return operations.create(data.model_dump(), db)
 ```
 
 - **`response_model`** — documents (and filters) the response schema
