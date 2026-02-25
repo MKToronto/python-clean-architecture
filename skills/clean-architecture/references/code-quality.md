@@ -111,7 +111,7 @@ A class that does everything. Split into focused classes with single responsibil
 
 A method that uses more data from another class than its own. Move the method to the class it envies.
 
-### 9. No Primitive Obsession
+### 9. No Bare Primitives
 
 Using raw primitives (str, int) where a domain type is needed. Create value objects.
 

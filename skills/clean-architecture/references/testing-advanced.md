@@ -273,7 +273,6 @@ Tests that execute this line achieve coverage — but only a test with `exemptio
 
 ### Practical Guidelines
 
-- **Aim for 80-90% meaningful coverage**, not 100% meaningless coverage
 - Use coverage reports to **find untested code paths**, not as a quality metric
 - **Unit tests must be deterministic** — never use `random.randint()` or `random.choice()` as test input; use fixed values so failures reproduce identically in CI
 - **Property-based tests (Hypothesis) are a controlled exception** — Hypothesis uses seeds, shrinking, and a failure database to ensure reproducibility despite generating varied inputs. This is fundamentally different from naive randomness.

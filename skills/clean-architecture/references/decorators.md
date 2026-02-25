@@ -1,6 +1,8 @@
 # Decorator Patterns Reference
 
-Decorators wrap a function to add behavior before, after, or around it — without modifying the original function. They are Python's native implementation of the Function Wrapper pattern. Content inspired by Arjan Codes' Software Designer Mindset course.
+Decorators wrap a function to add behavior before, after, or around it — without modifying the original function. They are Python's native implementation of the Function Wrapper pattern. Content inspired by Arjan Codes' courses.
+
+> **When to reach for decorators:** Decorators are useful for low-level cross-cutting concerns like logging and benchmarking. For higher-level design, prefer composing functions and objects directly — it keeps code simpler, easier to test, and easier for others to follow. Only use a decorator if it genuinely makes the code simpler and easier to deal with.
 
 ## 1. Basic Decorator Structure
 

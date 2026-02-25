@@ -9,9 +9,6 @@ Conventions and best practices for designing RESTful APIs with FastAPI. These gu
 - **Use plural nouns** for collections: `/customers`, `/orders`, `/rooms`
 - **Use IDs for individual resources**: `/customers/{customer_id}`
 - **Nest for relationships**: `/customers/{customer_id}/orders`
-- **Keep nesting shallow** — max 2 levels: `/customers/{id}/orders` not `/customers/{id}/orders/{oid}/items/{iid}`
-- **Use kebab-case** for multi-word resources: `/line-items`, `/booking-requests`
-- **No verbs in URLs** — the HTTP method is the verb: `POST /orders` not `POST /create-order`
 
 ```python
 router = APIRouter(prefix="/customers", tags=["customers"])

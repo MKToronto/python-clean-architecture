@@ -42,7 +42,6 @@ Each retry waits longer than the last — prevents overwhelming the service and 
 
 ```python
 import time
-import random
 from typing import Callable, TypeVar
 
 T = TypeVar("T")
@@ -52,7 +51,6 @@ def retry_with_backoff(
     retries: int = 5,
     base_delay: float = 1.0,
     backoff_factor: float = 2.0,
-    jitter: bool = True,
     **kwargs,
 ) -> T:
     for attempt in range(retries):
@@ -62,16 +60,12 @@ def retry_with_backoff(
             if attempt == retries - 1:
                 raise
             delay = base_delay * (backoff_factor ** attempt)
-            if jitter:
-                delay += random.uniform(0, delay * 0.1)
             print(f"Attempt {attempt + 1} failed: {e}. Retrying in {delay:.1f}s...")
             time.sleep(delay)
     raise RuntimeError("Unreachable")
 ```
 
 **Backoff schedule** (base_delay=1, factor=2): 1s → 2s → 4s → 8s → 16s
-
-**Jitter** adds a small random offset to prevent multiple clients retrying at the same instant.
 
 ---
 
