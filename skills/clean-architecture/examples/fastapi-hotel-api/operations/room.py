@@ -1,3 +1,12 @@
+"""Room business logic — CRUD operations.
+
+Intentional upgrades from transcript:
+  - Returns Pydantic Room models (transcript returned raw DataObject dicts)
+  - Full CRUD (transcript only showed read_all_rooms and read_room)
+  - create_room, update_room, delete_room added for completeness
+  - RoomUpdate with exclude_none=True enables partial updates
+"""
+
 import uuid
 
 from models.room import Room, RoomCreate, RoomUpdate

@@ -1,3 +1,10 @@
+"""FastAPI application entry point.
+
+Intentional upgrades from transcript:
+  - lifespan context manager replaces deprecated @app.on_event("startup")
+  - Flat imports (no hotel.* package prefix) for standalone example clarity
+"""
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI

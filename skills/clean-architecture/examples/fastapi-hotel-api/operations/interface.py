@@ -1,3 +1,13 @@
+"""DataInterface Protocol and in-memory stub for testing.
+
+Intentional upgrades from transcript:
+  - String IDs throughout (transcript used int)
+  - delete() returns None (transcript returned the deleted object)
+  - DataInterfaceStub is a full in-memory dict implementation — usable directly
+    in tests without subclassing (transcript taught a NotImplementedError base
+    class that required per-test subclasses)
+"""
+
 from typing import Any, Protocol
 
 DataObject = dict[str, Any]

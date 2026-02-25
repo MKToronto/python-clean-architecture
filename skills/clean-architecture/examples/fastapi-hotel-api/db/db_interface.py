@@ -1,3 +1,14 @@
+"""Generic database interface — wraps any SQLAlchemy model with CRUD methods.
+
+Intentional upgrades from transcript:
+  - Session injected via __init__ (transcript used global db_session import)
+  - SQLAlchemy 2.0 API: session.get() and session.scalars(select()) replace
+    legacy session.query().get() and session.query().all()
+  - KeyError raised on missing objects (transcript returned None silently)
+  - delete() returns None (transcript returned the deleted object)
+  - to_dict() lives here rather than in models.py for colocation with DBInterface
+"""
+
 from typing import Any
 
 from sqlalchemy import select

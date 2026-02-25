@@ -106,13 +106,20 @@ Minimize dependencies between classes, functions, and modules.
 **Content Coupling** — directly accessing another class's private state:
 
 ```python
+@dataclass
+class Account:
+    _balance: int = 0
+
+    def withdraw(self, amount: int) -> None:
+        self._balance -= amount
+
 # BAD: reaches into Account internals
 def pay_service_fee(account: Account, payment_type: PaymentType) -> None:
     account._balance -= SERVICE_FEES[payment_type]
 
 # GOOD: use the class's own method
 def pay_service_fee(account: Account, payment_type: PaymentType) -> None:
-    account.withdraw_unsafe(SERVICE_FEES[payment_type])
+    account.withdraw(SERVICE_FEES[payment_type])
 ```
 
 **Global Coupling** — module-level constants used directly by functions:

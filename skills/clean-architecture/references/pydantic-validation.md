@@ -2,6 +2,8 @@
 
 How to validate, transform, and constrain data using Pydantic v2 validators, field constraints, and model configuration. Covers field validators, model validators, serializers, and integration with FastAPI.
 
+> **Python 3.11+** required for `Self` type hint used in model validators. For 3.10, use `from __future__ import annotations` or `from typing_extensions import Self`.
+
 > Content inspired by Arjan Codes' Pydantic examples.
 
 ---

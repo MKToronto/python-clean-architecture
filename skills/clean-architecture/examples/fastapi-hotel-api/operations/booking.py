@@ -1,3 +1,14 @@
+"""Booking business logic — price computation, CRUD orchestration.
+
+Intentional upgrades from transcript:
+  - Returns Pydantic Booking models (transcript returned raw DataObject dicts)
+  - Uses model_dump() (Pydantic v2) instead of dataclass .dict()
+  - "nights" variable name (transcript used "days")
+  - data_interface parameter name (transcript used "booking_interface")
+  - UUID generation for IDs (transcript relied on DB autoincrement)
+  - InvalidDateError validation not included — add if date validation is needed
+"""
+
 import uuid
 
 from models.booking import Booking, BookingCreate

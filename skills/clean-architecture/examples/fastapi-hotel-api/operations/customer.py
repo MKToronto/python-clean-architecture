@@ -1,3 +1,12 @@
+"""Customer business logic — CRUD operations.
+
+Intentional upgrades from transcript:
+  - Simplified Customer model (name/email) vs transcript (first_name/last_name/email_address)
+  - Returns Pydantic Customer models (transcript returned raw DataObject dicts)
+  - Customer operations extracted as a standalone module (transcript covered customers
+    but did not refactor them into the testable DataInterface pattern)
+"""
+
 import uuid
 
 from models.customer import Customer, CustomerCreate

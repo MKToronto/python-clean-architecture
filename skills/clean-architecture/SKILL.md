@@ -246,3 +246,24 @@ For detailed guidance beyond this overview, consult:
 ### Example Files
 
 - **`examples/fastapi-hotel-api/`** — Complete working FastAPI project demonstrating all patterns: rooms and bookings with computed prices
+
+#### Intentional Upgrades from Source Transcript
+
+The example code applies the same architectural principles taught in the Arjan Codes course but modernizes several implementation details. Each file documents its specific upgrades in its module docstring. Summary of deliberate changes:
+
+| Category | Transcript (original) | Example (upgraded) | Rationale |
+|---|---|---|---|
+| **IDs** | Integer, autoincrement | String UUID (`uuid.uuid4()`) | App-generated, portable across databases |
+| **SQLAlchemy** | Legacy 1.x (`declarative_base()`, `session.query()`) | 2.0 style (`DeclarativeBase`, `session.get()`, `select()`) | Current best practice, forward-compatible |
+| **Pydantic models** | `@dataclass` + raw dicts | `BaseModel` with Create/Update/Read variants | FastAPI native, automatic validation & serialization |
+| **Startup** | `@app.on_event("startup")` | `lifespan` context manager | `on_event` is deprecated in modern FastAPI |
+| **Test framework** | `unittest.TestCase` | `pytest` functions | Simpler, more Pythonic, industry standard |
+| **Stub pattern** | `NotImplementedError` base, subclass per test | Full in-memory dict implementation | Directly usable without boilerplate subclasses |
+| **Error handling** | None (silent None returns) | `KeyError` + `HTTPException(404)` | Production-ready error responses |
+| **Router config** | Bare `APIRouter()` | `prefix=`, `tags=`, `response_model`, status codes | OpenAPI docs, proper HTTP semantics |
+| **Customer model** | `first_name`/`last_name`/`email_address` | `name`/`email` | Simplified for example clarity |
+| **Table names** | Singular (`"room"`) | Plural (`"rooms"`) | SQL naming convention |
+| **Session mgmt** | Global `db_session` in DBInterface | Injected via constructor parameter | Better dependency injection |
+| **Package** | `hotel.*` top-level package | Flat imports | Standalone example clarity |
+
+The core architecture (three-layer separation, `DataInterface` Protocol, dependency injection via router composition root, operations decoupled from database) is faithfully preserved.
