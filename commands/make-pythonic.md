@@ -37,4 +37,9 @@ Analyze the code at `$ARGUMENTS` (or the current working directory if no path gi
 
 5. **Apply changes** — Edit the files with the approved refactorings.
 
-For detailed pattern guidance, consult the relevant files in `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/patterns/`.
+For detailed pattern guidance, consult:
+- `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/pythonic-patterns.md` (quick lookup table for all 23 patterns)
+- `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/classes-and-dataclasses.md` (for class → dataclass conversions)
+- `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/decorators.md` (for decorator patterns)
+- `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/context-managers.md` (for try/finally → context manager conversions)
+- `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/patterns/` (full OOP → functional progressions per pattern)

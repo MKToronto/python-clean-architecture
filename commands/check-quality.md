@@ -53,3 +53,8 @@ Run a focused code quality check on `$ARGUMENTS` (or the current working directo
    Rule 16 (broad except):     2 instances
    Rule 5  (flag parameter):   1 instance
    ```
+
+For detailed rule explanations and examples, consult:
+- `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/code-quality.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/types-and-type-hints.md` (for rules 12–13)
+- `${CLAUDE_PLUGIN_ROOT}/skills/clean-architecture/references/error-handling.md` (for rules 16–17)

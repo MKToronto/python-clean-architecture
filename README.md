@@ -79,6 +79,7 @@ Findings are reported by severity (Critical / Important / Suggestions) with file
 **Review & Analysis:**
 ```
 /review-architecture [path]       Full architecture review (standard or in-depth)
+/review-api-design [path]         Review REST API endpoints for HTTP conventions
 /check-quality [path]             Quick check against 17 code quality rules
 /suggest-patterns [path]          Recommend Pythonic design patterns for your code
 /decouple [path]                  Find tight coupling and suggest DI improvements
@@ -90,13 +91,14 @@ Findings are reported by severity (Critical / Important / Suggestions) with file
 /extract-god-class [path]         Find and split god classes into focused collaborators
 ```
 
-**Scaffolding:**
+**Scaffolding & Testing:**
 ```
 /scaffold-api <project-name>      Generate a new FastAPI project with clean architecture
 /add-endpoint <entity-name>       Scaffold a new endpoint across all three layers
+/scaffold-tests [path]            Generate stub-based tests for existing operations
 ```
 
-`/scaffold-api` generates a full project structure with Pydantic models, operations, routers, database layer, and tests. `/add-endpoint` adds a new entity to an existing project — it creates files across all three layers (router + operations + DB model + Pydantic models + tests) and wires them into `main.py`.
+`/scaffold-api` generates a full project structure with Pydantic models, operations, routers, database layer, and tests. `/add-endpoint` adds a new entity to an existing project — it creates files across all three layers (router + operations + DB model + Pydantic models + tests) and wires them into `main.py`. `/scaffold-tests` generates DataInterfaceStub-based tests for existing operations without requiring a database.
 
 ## What's Inside
 
@@ -109,12 +111,14 @@ python-clean-architecture/
 ├── LICENSE                                 MIT license
 ├── commands/
 │   ├── review-architecture.md              Full architecture review
+│   ├── review-api-design.md                Review REST API conventions
 │   ├── check-quality.md                    Quick 17-rule quality check
 │   ├── suggest-patterns.md                 Recommend Pythonic patterns
 │   ├── decouple.md                         Find coupling, suggest DI
 │   ├── make-pythonic.md                    Refactor to Pythonic patterns
 │   ├── extract-god-class.md                Split god classes
 │   ├── scaffold-api.md                     Generate FastAPI project
+│   ├── scaffold-tests.md                   Generate stub-based tests
 │   └── add-endpoint.md                     Scaffold endpoint across layers
 └── skills/
     └── clean-architecture/
