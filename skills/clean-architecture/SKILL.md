@@ -125,24 +125,24 @@ When asked to create a new FastAPI project, generate this structure:
 
 ```
 project_name/
-├── src/
-│   ├── main.py              # FastAPI app, include_router, lifespan handler
-│   ├── routers/
-│   │   ├── __init__.py
-│   │   └── {entity}.py      # APIRouter, endpoint functions
-│   ├── operations/
-│   │   ├── __init__.py
-│   │   └── {entity}.py      # Business logic functions
-│   ├── db/
-│   │   ├── __init__.py
-│   │   ├── database.py       # Engine, SessionLocal, Base
-│   │   ├── db_interface.py   # Generic DBInterface class
-│   │   └── models.py         # SQLAlchemy models
-│   └── models/
-│       ├── __init__.py
-│       └── {entity}.py       # Pydantic models + DataInterface Protocol
+├── main.py                    # FastAPI app, include_router, lifespan handler
+├── routers/
+│   ├── __init__.py
+│   └── {entity}.py            # APIRouter, endpoint functions
+├── operations/
+│   ├── __init__.py
+│   ├── interface.py           # DataInterface Protocol + DataInterfaceStub
+│   └── {entity}.py            # Business logic functions
+├── db/
+│   ├── __init__.py
+│   ├── database.py            # Engine, SessionLocal, Base
+│   ├── db_interface.py        # Generic DBInterface class
+│   └── models.py              # SQLAlchemy models
+├── models/
+│   ├── __init__.py
+│   └── {entity}.py            # Pydantic Create/Read models
 ├── tests/
-│   └── test_{entity}.py      # Tests using DataInterfaceStub
+│   └── test_{entity}.py       # Tests using DataInterfaceStub
 ├── requirements.txt
 └── .gitignore
 ```
