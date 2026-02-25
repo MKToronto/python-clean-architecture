@@ -25,7 +25,7 @@ Run a focused code quality check on `$ARGUMENTS` (or the current working directo
    8. Functions do one thing (extract if doing two things)
 
    **Classes:**
-   9. No god classes (>200 lines or >5 responsibilities → extract classes)
+   9. No god classes (too many responsibilities → extract classes)
    10. No parallel data structures (two lists tracking same entities → single dataclass)
    11. Information Expert (methods should live on the class that owns the data)
 

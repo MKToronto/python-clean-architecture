@@ -11,10 +11,9 @@ Analyze the code at `$ARGUMENTS` (or the current working directory if no path gi
 1. **Read the code** — Find and read ALL Python files in the target path recursively. Read every `.py` file.
 
 2. **Identify god classes** — A class is a god class if it has any of:
-   - More than 200 lines
-   - More than 5 distinct responsibilities
+   - Too many distinct responsibilities (doing more than one thing)
    - Methods that cluster into unrelated groups
-   - Too many instance variables (>7)
+   - Too many instance variables
    - Methods that don't use most of the class's state
 
 3. **Analyze responsibilities** — For each god class:

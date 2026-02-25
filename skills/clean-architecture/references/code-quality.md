@@ -371,7 +371,6 @@ When reviewing Python code, check for:
 
 ### Structure
 - [ ] Each file/class has a single responsibility
-- [ ] No file exceeds ~200 lines (split if larger)
 - [ ] No function exceeds ~40 lines
 - [ ] Import structure is clean (no wildcards, no circular imports)
 - [ ] Folder structure reflects architecture

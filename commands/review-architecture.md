@@ -54,7 +54,7 @@ Then review the code at `$ARGUMENTS` (or the current working directory if no pat
    - Replace boolean flag parameters with separate functions
    - Replace string constants with Enums
    - Replace deep nesting (3+ levels) with early returns or extraction
-   - Replace god classes (>200 lines, >5 responsibilities) with collaborators
+   - Replace god classes (too many responsibilities) with collaborators
    - Move methods to the class that owns the data (Information Expert)
    - Replace parallel data structures with a single data class
    - Replace if/elif chains with dict mapping
