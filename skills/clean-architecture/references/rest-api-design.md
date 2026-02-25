@@ -42,6 +42,38 @@ Use standard HTTP status codes. Provide a response body with additional informat
 
 ---
 
+## Sensible Defaults
+
+Design query parameters with defaults that minimize required input. The goal is to make the common case require the fewest arguments.
+
+```python
+from datetime import datetime, timedelta
+
+@router.get("/transactions")
+async def list_transactions(
+    start_date: datetime = Query(default_factory=lambda: datetime.now() - timedelta(days=1)),
+    end_date: datetime = Query(default_factory=datetime.now),
+    limit: int = Query(default=20, ge=1, le=100),
+):
+    ...
+```
+
+Anti-pattern: requiring arguments that have obvious defaults (e.g., forcing the caller to pass `end_date=now` every time). If `end_date` is almost always "right now," default it to that.
+
+Use `Query()` constraints (`ge`, `le`, `min_length`, `max_length`) directly on endpoint parameters to add validation without separate Pydantic models for simple query parameters:
+
+```python
+@router.get("/convert")
+async def convert(
+    from_currency: str = Query(min_length=3, max_length=3),
+    to_currency: str = Query(min_length=3, max_length=3),
+    amount: Decimal = Query(gt=0),
+):
+    ...
+```
+
+---
+
 ## Pagination
 
 Make pagination consistent across all list endpoints:
@@ -72,6 +104,26 @@ async def create_customer(data: CustomerCreate):
 - **`tags`** on the router — groups endpoints in the sidebar
 
 Access at `/docs` (Swagger UI) or `/redoc` (ReDoc).
+
+### Response Descriptions per Status Code
+
+Use the `responses` parameter on endpoints to document what each status code means:
+
+```python
+@router.post(
+    "/",
+    status_code=201,
+    response_model=Customer,
+    responses={
+        400: {"description": "Customer with this email already exists"},
+        422: {"description": "Validation error in request body"},
+    },
+)
+async def create_customer(data: CustomerCreate):
+    ...
+```
+
+FastAPI renders these in both `/docs` and `/redoc`. Combine with `summary` and docstrings for complete endpoint documentation.
 
 ---
 
@@ -107,6 +159,102 @@ async def get_booking(booking_id: str):
 ```
 
 This keeps the core resource clean while providing useful derived values. The client knows `metadata` fields are computed, not stored.
+
+---
+
+## Health Check Endpoint
+
+Every production API needs a health endpoint that infrastructure (Kubernetes, load balancers) can poll:
+
+```python
+@router.get("/health")
+async def health():
+    return {"status": "ok"}
+```
+
+Keep this lightweight and free of authentication. For deeper checks (database connectivity, external service availability), add a separate `/health/detailed` endpoint behind authentication.
+
+---
+
+## Rate Limiting
+
+Rate limiting controls how many requests a client can make within a time window. It prevents abuse, protects against brute-force attacks, and manages cost for usage-based APIs.
+
+### SlowAPI Integration
+
+```bash
+pip install slowapi
+```
+
+```python
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+limiter = Limiter(key_func=get_remote_address)
+
+app = FastAPI()
+app.state.limiter = limiter
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded. Try again later."},
+    )
+```
+
+### Per-Endpoint Limits
+
+Apply different limits to different endpoints. Write operations typically need stricter limits:
+
+```python
+@router.get("/{item_id}")
+@limiter.limit("10/second")
+async def read_item(request: Request, item_id: str):
+    ...
+
+@router.post("/")
+@limiter.limit("1/second")
+async def create_item(request: Request, data: ItemCreate):
+    ...
+```
+
+The `@limiter.limit()` decorator must come AFTER (below) the `@router` decorator. The endpoint must accept a `request: Request` parameter.
+
+### Burst Handling with Multiple Limits
+
+Combine a permissive short-window limit with a stricter long-window limit:
+
+```python
+@router.get("/")
+@limiter.limit("10/second")
+@limiter.limit("120/minute")
+async def list_items(request: Request):
+    ...
+```
+
+### Rate Limiting by API Key
+
+For per-user limits (e.g., free vs paid tiers), extract the API key from headers:
+
+```python
+def get_api_key(request: Request) -> str:
+    return request.headers.get("x-api-key", "anonymous")
+
+limiter = Limiter(key_func=get_api_key)
+```
+
+### Operational Considerations
+
+- **Make limits configurable** via environment variables so they can change without redeploying
+- **Multi-instance awareness** — in-memory rate limiting doesn't work across multiple API instances. Use Redis:
+
+```python
+limiter = Limiter(key_func=get_remote_address, storage_uri="redis://localhost:6379")
+```
 
 ---
 

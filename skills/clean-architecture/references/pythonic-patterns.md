@@ -495,31 +495,69 @@ power_fn = partial(power_speaker, facade)  # Callable[[bool], None]
 
 → Full reference: `patterns/facade.md`
 
+### Repository
+
+**Recognize:** Data access logic (SQL queries, file I/O) is mixed into domain classes. Changing storage requires modifying business logic.
+
+**Pythonic implementation:** Protocol interface for CRUD operations, concrete implementations per storage backend, in-memory stub for testing. The three-layer architecture's `DataInterface` + `DBInterface` is this pattern:
+
+```python
+class PostRepository(Protocol):
+    def get(self, post_id: str) -> Post: ...
+    def get_all(self) -> list[Post]: ...
+    def add(self, post: Post) -> None: ...
+    def update(self, post: Post) -> None: ...
+    def delete(self, post_id: str) -> None: ...
+```
+
+→ Full reference: `patterns/repository.md`
+
+### Fluent Interface
+
+**Recognize:** Sequential operations on an object are verbose and hard to read. Steps and configuration lists must be kept in sync manually.
+
+**Pythonic implementation:** Methods return `self` to enable chaining. Add domain-specific verbs for readability:
+
+```python
+animation = (
+    Animation()
+    .rotate(60)
+    .move(200, 0)
+    .scale(1.3, duration=0.5)
+    .fade_to(0.0)
+)
+```
+
+Use `Self` (Python 3.11+) for subclass-safe return types. Not the same as Builder — intent is readability, not controlled construction.
+
+→ Full reference: `patterns/fluent-interface.md`
+
 ### Retry
 
 **Recognize:** External API/database calls fail intermittently due to transient errors (timeouts, rate limits, temporary unavailability).
 
-**Pythonic implementation:** `@retry` decorator with exponential backoff using `functools.wraps`:
+**Pythonic implementation:** `@retry` decorator with exponential backoff using `functools.wraps`. Catches `Exception` broadly — the re-raise after exhaustion is the safety mechanism:
 
 ```python
 import functools
 import time
 
-def retry(retries: int = 3, delay: float = 1.0, exceptions: tuple[type[Exception], ...] = (Exception,)):
+def retry(retries: int = 3, delay: float = 1.0, backoff: float = 2.0):
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
-            for attempt in range(retries):
+            for attempt in range(1, retries + 1):
                 try:
                     return fn(*args, **kwargs)
-                except exceptions:
-                    if attempt == retries - 1:
+                except Exception:
+                    if attempt == retries:
                         raise
-                    time.sleep(delay * (2 ** attempt))
+                    time.sleep(delay * (backoff ** (attempt - 1)))
+            raise RuntimeError("All retries failed")
         return wrapper
     return decorator
 
-@retry(retries=5, exceptions=(ConnectionError, TimeoutError))
+@retry(retries=5, delay=0.5)
 def fetch_price(symbol: str) -> float:
     return requests.get(f"https://api.example.com/price/{symbol}").json()["price"]
 ```

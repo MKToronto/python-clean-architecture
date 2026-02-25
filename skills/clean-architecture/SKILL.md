@@ -187,7 +187,9 @@ For detailed guidance beyond this overview, consult:
 
 **Architecture & Design:**
 - **`references/design-principles.md`** — Full treatment of the seven design principles with refactoring recipes and code examples
-- **`references/layered-architecture.md`** — Detailed three-layer architecture guide: DataInterface, DBInterface, router composition, Pydantic models, to_dict utility
+- **`references/grasp-principles.md`** — GRASP principles: Creator, Information Expert, Controller, Low Coupling, High Cohesion, Polymorphism, Indirection, Protected Variations, Pure Fabrication
+- **`references/domain-driven-design.md`** — Domain-Driven Design: domain models, ubiquitous language, model distillation, code as temporary expression
+- **`references/layered-architecture.md`** — Detailed three-layer architecture guide: DataInterface (Repository pattern), DBInterface, router composition, Pydantic models, to_dict utility
 - **`references/testable-api.md`** — Testing strategy: stub-based testing, DataInterfaceStub, test isolation, no-database testing
 - **`references/testing-advanced.md`** — Pytest organization, property-based testing (Hypothesis), model-based stateful testing, code coverage philosophy
 - **`references/rest-api-design.md`** — HTTP method semantics, status codes, resource naming, pagination, error response format, OpenAPI, versioning
@@ -198,7 +200,7 @@ For detailed guidance beyond this overview, consult:
 - **`references/data-structures.md`** — Choosing list vs dict vs tuple vs set, enums, performance trade-offs
 - **`references/types-and-type-hints.md`** — Python's type system, Callable types, nominal vs structural typing, best practices
 - **`references/error-handling.md`** — Custom exceptions, context managers, error handling layers, anti-patterns
-- **`references/code-quality.md`** — 17 code quality rules: naming, nesting, flags, type abuse, and code review checklist
+- **`references/code-quality.md`** — 22 code quality rules: naming, nesting, flags, type abuse, isinstance dispatch, overloaded classes, and code review checklist
 - **`references/project-organization.md`** — Modules, packages, imports, folder structure, avoid "utils" anti-pattern
 - **`references/context-managers.md`** — Context manager protocol, `__enter__`/`__exit__`, `@contextmanager`, `ExitStack`, async context managers
 - **`references/decorators.md`** — Decorator patterns: retry with backoff, logging, timing, `functools.wraps`, parameterized decorators
@@ -207,7 +209,7 @@ For detailed guidance beyond this overview, consult:
 - **`references/pattern-matching.md`** — Structural pattern matching (`match`/`case`): literal, capture, OR, sequence, class, mapping patterns, guard clauses
 
 **Pythonic Patterns:**
-- **`references/pythonic-patterns.md`** — Quick reference lookup table for all 23 patterns (use for reviews and pattern selection)
+- **`references/pythonic-patterns.md`** — Quick reference lookup table for all 25 patterns (use for reviews and pattern selection)
 
 **Pythonic Patterns (full progressions from OOP → functional):**
 - **`references/patterns/strategy.md`** — Callable type alias, closures, functools.partial
@@ -224,6 +226,8 @@ For detailed guidance beyond this overview, consult:
 - **`references/patterns/plugin-architecture.md`** — Config-driven plugins, `importlib` auto-discovery, self-registering modules, Protocol conformance
 
 **Architectural & Domain Patterns:**
+- **`references/patterns/repository.md`** — Repository pattern: separating data storage from data access, relationship to DataInterface
+- **`references/patterns/fluent-interface.md`** — Method chaining with `return self`, domain-specific verbs, when to use vs Builder
 - **`references/patterns/value-objects.md`** — Wrapping primitives in validated domain types: Price, Percentage, EmailAddress
 - **`references/patterns/event-sourcing.md`** — Immutable events, EventStore[T], projections, cache invalidation
 - **`references/patterns/cqrs.md`** — Separate read/write models, command handlers, projector functions

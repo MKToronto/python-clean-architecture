@@ -154,6 +154,36 @@ total = rental.total_price
 - **Pass only what a function needs** — `read_vehicle_type(vehicle_types: list[str])` not the entire dict
 - **Extract magic numbers into configurable attributes** — `km_free_limit: int = 100`
 - **Replace globals with local variables in composition root** — `VEHICLE_DATA` constant becomes local `vehicle_data`
+- **Introduce an intermediate data structure** — When two subsystems are tightly coupled, define a shared data structure (DTO, formal representation) between them. Each side depends only on that structure, not on the other's internals. Example: Python bytecode sits between the interpreter and runner; a formal accident report sits between NLP and 3D simulation.
+- **Eliminate inappropriate intimacy** — If a function receives a complex object but only uses one nested attribute, pass that attribute directly instead.
+
+### The Coupling Tradeoff Chain
+
+Removing one type of coupling often introduces another. The goal is to find the least-harmful form:
+
+```python
+# Step 1: Global coupling (BAD)
+API_URL = "https://api.company.com"
+TOKEN = "a3f5c7e8..."
+
+def make_request(path: str) -> None:
+    headers = {"Authorization": f"Bearer {TOKEN}"}
+    ...
+
+# Step 2: Data coupling -- removes globals but adds 6 arguments (BETTER but noisy)
+def make_request(api_url: str, version: str, token: str,
+                 account_id: int, path: str, data: dict | None = None) -> None: ...
+
+# Step 3: Class grouping -- best balance
+@dataclass
+class APIClient:
+    api_url: str
+    version: str
+    token: str
+    account_id: int
+
+    def make_request(self, path: str, data: dict | None = None) -> None: ...
+```
 
 ---
 
@@ -174,6 +204,14 @@ class Payable(Protocol):
 - No inheritance needed in implementing classes — structural typing handles matching
 - The Protocol belongs conceptually to the **consumer** (the function that uses it), not the implementor
 - Implementing classes satisfy the Protocol by having the right methods/attributes
+- **Do not include `__init__` in Protocols** — different implementations need different constructor arguments. Only specify the methods the consumer calls.
+
+### Dependency Injection vs Dependency Inversion
+
+- **Dependency Injection (DI)** is the *mechanism*: pass dependencies as arguments instead of creating them internally. This alone improves testability.
+- **Dependency Inversion Principle (DIP)** is the *principle*: depend on abstractions (Protocol), not concrete classes. DIP requires DI, but DI does not require DIP.
+- **DI without DIP**: `PaymentProcessor(authorizer: SMSAuthorizer)` — injected, but still coupled to a concrete class.
+- **DI with DIP**: `PaymentProcessor(authorizer: Authorizer)` where `Authorizer` is a Protocol — injected AND decoupled.
 
 ### Callable for Function Abstractions
 

@@ -280,6 +280,157 @@ Tests that execute this line achieve coverage — but only a test with `exemptio
 
 ---
 
+## Test-Driven Development (Red-Green-Refactor)
+
+TDD follows five steps in a cycle:
+
+1. **Write tests** that only pass if the feature specification is met — forces you to think about requirements before coding
+2. **Run the tests and verify they all fail** — confirms you are testing new functionality
+3. **Write the simplest code** that makes the tests pass — does not have to be perfect yet
+4. **Verify all tests pass** — including older tests, ensuring new code does not break existing behavior
+5. **Refactor** while keeping tests green — improve structure with a safety net
+
+### TDD Anti-Patterns
+
+**Do not reuse mutable state between tests:**
+
+```python
+# BAD: shared instance leaks mutations between tests
+employee_to_test = Employee(name="Test", pay_rate=50.0)
+
+def test_payout_no_hours():
+    assert employee_to_test.compute_payout() == 1000  # uses leaked state
+
+# GOOD: each test creates its own instance
+def test_payout_no_hours():
+    emp = Employee(name="Test", pay_rate=50.0)
+    assert emp.compute_payout() == 1000
+```
+
+**Do not test Python built-in behavior:**
+
+```python
+# BAD: testing that dataclass assignment works
+def test_employee_attributes():
+    emp = Employee(name="Jane", pay_rate=50.0)
+    assert emp.name == "Jane"  # tests Python, not your code
+
+# GOOD: test your business logic
+def test_compute_payout_with_commission():
+    emp = Employee(name="Jane", pay_rate=50.0, hours_worked=10,
+                   has_commission=True, contracts_landed=5, commission=100)
+    assert emp.compute_payout() == 1500  # tests computed value
+```
+
+**Always compare against fixed values, never re-implement the logic in the test:**
+
+```python
+# BAD: duplicating the implementation in the test
+def test_payout():
+    assert emp.compute_payout() == compute_payout_reference(emp)
+    # Comparing two copies of the same code
+
+# GOOD: assert against a pre-computed constant
+def test_payout():
+    emp = Employee(pay_rate=50.0, hours_worked=10, employer_cost=1000)
+    assert emp.compute_payout() == 1500
+```
+
+### When TDD Costs More Than It Saves
+
+- At startups in early-stage product discovery, requirements change so fast that maintaining exhaustive tests becomes overhead
+- TDD creates a false sense of security if you only write unit tests and skip integration/end-to-end testing
+- When the test author is also the code author, blind spots are likely
+
+---
+
+## Mutation Testing
+
+Mutation testing modifies your source code slightly (introducing "mutants") and checks whether your tests catch the change. It is a test for your tests.
+
+A mutation testing tool makes small changes to operators and values (`+` → `-`, `<` → `<=`, `x * 2` → `x + 2`). If your tests still pass after a mutation, you have a **surviving mutant** — your tests are not thorough enough.
+
+```python
+def multiply_by_two(x: int) -> int:
+    return x * 2
+
+# This test does NOT catch `x + 2` replacing `x * 2`:
+def test_multiply():
+    assert multiply_by_two(2) == 4  # 2+2 == 4 also passes!
+
+# Adding a second case kills the mutant:
+def test_multiply_three():
+    assert multiply_by_two(3) == 6  # 3+2 != 6, mutant caught
+```
+
+```bash
+pip install mutmut
+mutmut run --paths-to-mutate=src/
+```
+
+---
+
+## API Testing with FastAPI
+
+### In-Memory SQLite for Tests
+
+Replace the production database with an in-memory SQLite database using FastAPI's dependency override:
+
+```python
+from sqlalchemy import create_engine, StaticPool
+from sqlalchemy.orm import sessionmaker
+from fastapi.testclient import TestClient
+from main import app, get_db, Base
+
+engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+TestingSessionLocal = sessionmaker(bind=engine)
+
+def override_get_db():
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+app.dependency_overrides[get_db] = override_get_db
+client = TestClient(app)
+```
+
+### Setup and Teardown with Fixtures
+
+```python
+@pytest.fixture(autouse=True)
+def setup_db():
+    Base.metadata.create_all(bind=engine)
+    yield
+    Base.metadata.drop_all(bind=engine)
+
+def test_create_item():
+    response = client.post("/items", json={"name": "Widget", "description": "A widget"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Widget"
+    assert "id" in data
+
+def test_read_nonexistent_item():
+    response = client.get("/items/999")
+    assert response.status_code == 404
+```
+
+### Test Operations Directly (Not Through Routes)
+
+When operations are separated from routes, test them without HTTP:
+
+```python
+def test_create_item_operation(session):
+    item = db_create_item(session, name="Widget", description="A widget")
+    assert item.name == "Widget"
+```
+
+This is simpler than going through the HTTP client and tests only the database logic.
+
+---
+
 ## Relationship to Other Testing Approaches
 
 - **`testable-api.md`** covers stub-based unit testing with `DataInterfaceStub` — the foundation for testing operations without a database

@@ -69,7 +69,7 @@ Or mention: layered architecture, dependency injection, Protocol-based design, P
 The review checks:
 - **Architecture layers** — Three-layer separation, no layer skipping, router as composition root
 - **7 design principles** — Cohesion, coupling, abstractions, composition, creation/use, data-first, simplicity
-- **17 code quality rules** — Naming, nesting, types, error handling, imports, structure
+- **22 code quality rules** — Naming, nesting, types, error handling, imports, structure
 - **Pythonic patterns** — Strategy as Callable, Factory as dict mapping, Protocol over ABC
 
 Findings are reported by severity (Critical / Important / Suggestions) with file/line references and fix snippets.
@@ -80,7 +80,7 @@ Findings are reported by severity (Critical / Important / Suggestions) with file
 ```
 /review-architecture [path]       Full architecture review (standard or in-depth)
 /review-api-design [path]         Review REST API endpoints for HTTP conventions
-/check-quality [path]             Quick check against 17 code quality rules
+/check-quality [path]             Quick check against 22 code quality rules
 /suggest-patterns [path]          Recommend Pythonic design patterns for your code
 /decouple [path]                  Find tight coupling and suggest DI improvements
 ```
@@ -129,7 +129,7 @@ python-clean-architecture/
         │   ├── testable-api.md             Stub-based testing strategy
         │   ├── testing-advanced.md         Pytest, property-based, stateful testing
         │   ├── rest-api-design.md          HTTP methods, status codes, OpenAPI
-        │   ├── code-quality.md             17 rules + code review checklist
+        │   ├── code-quality.md             22 rules + code review checklist
         │   ├── classes-and-dataclasses.md  Classes vs dataclasses decision guide
         │   ├── function-design.md          Pure functions, closures, partial, HOFs
         │   ├── data-structures.md          Choosing the right data structure
@@ -142,7 +142,9 @@ python-clean-architecture/
         │   ├── async-patterns.md           Async/await, gather, TaskGroup
         │   ├── pydantic-validation.md      Pydantic v2 validators, ConfigDict
         │   ├── pattern-matching.md         match/case structural patterns
-        │   ├── pythonic-patterns.md        Quick reference for all 23 patterns
+        │   ├── grasp-principles.md         GRASP: 9 principles for responsibility assignment
+        │   ├── domain-driven-design.md     DDD: domain models, ubiquitous language
+        │   ├── pythonic-patterns.md        Quick reference for all 25 patterns
         │   └── patterns/
         │       ├── strategy.md             Full OOP → functional progression
         │       ├── abstract-factory.md     Tuples of functions + partial
@@ -162,6 +164,8 @@ python-clean-architecture/
         │       ├── state.md                Protocol-based state objects
         │       ├── adapter.md              Composition + partial adaptation
         │       ├── facade.md               Simplified subsystem interface
+        │       ├── repository.md            Separating storage from access
+        │       ├── fluent-interface.md     Method chaining, domain verbs
         │       ├── retry.md                Exponential backoff decorator
         │       ├── lazy-loading.md         cache, cached_property, generators
         │       └── plugin-architecture.md  Config-driven, importlib discovery
@@ -204,7 +208,7 @@ Each layer depends only on the layer below. The router is the composition root w
 - Dict mapping over if/elif chains
 - Readability over dogmatic functional purity
 
-23 design patterns implemented the Pythonic way:
+25 design patterns implemented the Pythonic way:
 
 **Core Patterns:**
 - **Strategy** — `Callable` type alias, pass functions as args
@@ -229,4 +233,6 @@ Each layer depends only on the layer below. The router is the composition root w
 - **Facade** — Simplified interface class, `functools.partial` to bind dependencies
 - **Retry** — `@retry` decorator with exponential backoff, fallback strategies
 - **Lazy Loading** — `functools.cache`, `cached_property`, generators, `__getattr__`
+- **Repository** — Protocol interface for CRUD, concrete implementations per storage backend
+- **Fluent Interface** — Methods return `self` for chaining, domain-specific verbs for readability
 - **Plugin Architecture** — Config-driven creation, `importlib` auto-discovery, self-registering modules

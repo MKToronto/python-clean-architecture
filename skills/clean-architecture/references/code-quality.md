@@ -1,8 +1,8 @@
 # Code Quality Reference
 
-17 code quality rules derived from common design mistakes, plus a code review checklist.
+22 code quality rules derived from common design mistakes, plus a code review checklist.
 
-## The 17 Design Rules
+## The 22 Design Rules
 
 ### 1. No Type Abuse
 
@@ -241,8 +241,7 @@ The directory layout should reflect the software architecture pattern in use.
 
 ```
 # Layered architecture
-src/
-    routers/
+routers/
     operations/
     db/
     models/
@@ -252,6 +251,106 @@ src/
     models/
     views/
     controllers/
+```
+
+### 18. No isinstance Checks for Dispatch
+
+Using `isinstance` to decide what to do with an object signals a missing method on the object itself. Move the behavior into the class hierarchy or use a strategy dict.
+
+```python
+# BAD: external dispatch based on type
+def pay_employee(employee: Employee):
+    if isinstance(employee, SalariedEmployee):
+        print(f"Paying {employee.name} salary of {employee.monthly_salary}")
+    elif isinstance(employee, HourlyEmployee):
+        print(f"Paying {employee.name} for {employee.hours_worked} hours")
+
+# GOOD: each class implements its own pay method
+class Employee(Protocol):
+    def pay(self) -> None: ...
+
+employee.pay()
+```
+
+### 19. No Overloaded Classes
+
+When a class has too many instance variables, it likely holds multiple responsibilities. Extract cohesive groups into separate classes.
+
+```python
+# BAD: Order knows everything about the customer
+@dataclass
+class Order:
+    customer_name: str
+    customer_address: str
+    customer_city: str
+    customer_email: str
+    items: list[LineItem] = field(default_factory=list)
+
+# GOOD: separate Customer from Order
+@dataclass
+class Customer:
+    name: str
+    address: str
+    city: str
+    email: str
+
+@dataclass
+class Order:
+    customer: Customer
+    items: list[LineItem] = field(default_factory=list)
+```
+
+### 20. No Asymmetric Naming
+
+When multiple classes do the same kind of thing, name the methods consistently. Use Python dunder methods when they exist.
+
+```python
+# BAD: inconsistent string conversion names
+class VehicleModelInfo:
+    def get_formatted_info(self) -> str: ...
+
+class Vehicle:
+    def to_display_string(self) -> str: ...
+
+# GOOD: use __str__ consistently
+class VehicleModelInfo:
+    def __str__(self) -> str: ...
+
+class Vehicle:
+    def __str__(self) -> str: ...
+```
+
+### 21. No Misleading Method Names
+
+Method names must accurately describe what the method does. `create_X` should create and return X. `add_X` should add X to a collection. `get_X` should retrieve X.
+
+```python
+# BAD: "create_line_item" suggests it creates and returns,
+# but it actually appends to an internal list
+def create_line_item(self, name: str, quantity: int, price: int) -> None:
+    self.items.append(name)
+
+# GOOD: name matches behavior
+def add_line_item(self, item: LineItem) -> None:
+    self.items.append(item)
+```
+
+### 22. No Hardwired Initialization Sequences
+
+If forgetting to call a setup method breaks the system, the sequence should be encapsulated. Use a factory method or `__init__` to guarantee proper setup.
+
+```python
+# BAD: caller must remember to call connect after creation
+processor = StripePaymentProcessor()
+processor.connect_to_service("https://api.stripe.com")  # forget this = crash
+
+# GOOD: factory method guarantees complete initialization
+class StripePaymentProcessor:
+    @staticmethod
+    def create(url: str) -> "StripePaymentProcessor":
+        processor = StripePaymentProcessor()
+        processor.connect_to_service(url)
+        return processor
 ```
 
 ---
