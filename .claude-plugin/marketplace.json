@@ -11,7 +11,7 @@
       "name": "python-clean-architecture",
       "source": "./",
       "description": "Clean Architecture guidance for Python/FastAPI projects. Provides principles-driven design, Pythonic patterns, and layered architecture scaffolding based on Arjan Codes' methodology.",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "author": {
         "name": "MKToronto"
       },
