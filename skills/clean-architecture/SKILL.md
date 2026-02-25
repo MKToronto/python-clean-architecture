@@ -99,6 +99,12 @@ When encountering these code smells, apply the corresponding pattern:
 | Need to react to events without coupling | Callback | Function passed as argument, called when event occurs |
 | Reusing a function with a different interface | Function Wrapper | Calls another function, translates its arguments |
 | Separating configuration from usage | Function Builder | Higher-order function returns a configured function |
+| Bare primitives for domain concepts (prices, emails) | Value Objects | Subclass built-in types with `__new__` validation, or frozen dataclass |
+| Need audit trail, temporal queries, or event replay | Event Sourcing | Immutable `Event[T]`, append-only `EventStore[T]`, projection functions |
+| Read/write patterns diverge; list views compute derived fields | CQRS | Separate write model + read projection, projector function after writes |
+| Complex object with many optional parts | Builder | Fluent API with `Self` return type, `.build()` returns frozen product |
+| Multiple DB writes that must succeed or fail together | Unit of Work | Context manager wrapping transaction: commit on success, rollback on error |
+| Need exactly one instance of a shared resource | Singleton | Module-level instance (preferred), or metaclass with `_instances` dict |
 
 ### Default preferences for all patterns:
 
@@ -178,9 +184,12 @@ For detailed guidance beyond this overview, consult:
 - **`references/project-organization.md`** — Modules, packages, imports, folder structure, avoid "utils" anti-pattern
 - **`references/context-managers.md`** — Context manager protocol, `__enter__`/`__exit__`, `@contextmanager`, `ExitStack`, async context managers
 - **`references/decorators.md`** — Decorator patterns: retry with backoff, logging, timing, `functools.wraps`, parameterized decorators
+- **`references/async-patterns.md`** — Async/await for FastAPI: coroutines, `asyncio.gather`, `TaskGroup`, async context managers, async generators, async DataInterface
+- **`references/pydantic-validation.md`** — Pydantic v2 validators: `@field_validator`, `@model_validator`, `Field()` constraints, `ConfigDict`, serializers, special types
+- **`references/pattern-matching.md`** — Structural pattern matching (`match`/`case`): literal, capture, OR, sequence, class, mapping patterns, guard clauses
 
 **Pythonic Patterns:**
-- **`references/pythonic-patterns.md`** — Quick reference lookup table for all 10 patterns (use for reviews and pattern selection)
+- **`references/pythonic-patterns.md`** — Quick reference lookup table for all 17 patterns (use for reviews and pattern selection)
 
 **Pythonic Patterns (full progressions from OOP → functional):**
 - **`references/patterns/strategy.md`** — Callable type alias, closures, functools.partial
@@ -192,6 +201,14 @@ For detailed guidance beyond this overview, consult:
 - **`references/patterns/template-method.md`** — Free function + Protocol parameters, protocol segregation
 - **`references/patterns/pipeline.md`** — Chain of Responsibility, functools.reduce composition, pandas .pipe()
 - **`references/patterns/functional.md`** — Callback, Function Wrapper, Function Builder patterns
+
+**Architectural & Domain Patterns:**
+- **`references/patterns/value-objects.md`** — Wrapping primitives in validated domain types: Price, Percentage, EmailAddress
+- **`references/patterns/event-sourcing.md`** — Immutable events, EventStore[T], projections, cache invalidation
+- **`references/patterns/cqrs.md`** — Separate read/write models, command handlers, projector functions
+- **`references/patterns/builder.md`** — Fluent API with Self return type, mutable builder to immutable product
+- **`references/patterns/unit-of-work.md`** — Transaction context managers, automatic rollback, repository composition
+- **`references/patterns/singleton.md`** — Module-level instance (preferred), metaclass approach, thread safety
 
 ### Example Files
 

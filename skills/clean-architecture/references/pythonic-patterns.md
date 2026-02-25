@@ -283,3 +283,131 @@ def create_email_sender(smtp_server: str, port: int, user: str, password: str) -
 ```
 
 → Full progression: `patterns/functional.md`
+
+---
+
+## Architectural & Domain Patterns
+
+### Value Objects
+
+**Recognize:** Bare primitives (float, str) representing domain concepts — prices, emails, percentages — with no validation.
+
+**Pythonic implementation:** Subclass built-in types with validation in `__new__`, or use frozen dataclasses with `__post_init__`:
+
+```python
+class Price(float):
+    def __new__(cls, value) -> Self:
+        val = float(value)
+        if val < 0:
+            raise ValueError("Price must be non-negative")
+        return super().__new__(cls, val)
+
+@dataclass(frozen=True)
+class EmailAddress:
+    value: str
+    def __post_init__(self) -> None:
+        if not EMAIL_RE.match(self.value):
+            raise ValueError(f"Invalid email: {self.value}")
+```
+
+→ Full reference: `patterns/value-objects.md`
+
+### Event Sourcing
+
+**Recognize:** Need audit trails, temporal queries, or multiple derived views of the same data.
+
+**Pythonic implementation:** Immutable `Event[T]` (frozen dataclass), append-only `EventStore[T]`, pure projection functions:
+
+```python
+@dataclass(frozen=True)
+class Event[T = str]:
+    type: EventType
+    data: T
+    timestamp: datetime = datetime.now()
+
+class EventStore[T]:
+    def append(self, event: Event[T]) -> None: ...
+    def get_all_events(self) -> list[Event[T]]: ...
+```
+
+→ Full reference: `patterns/event-sourcing.md`
+
+### CQRS
+
+**Recognize:** List endpoints compute derived fields on every read; read and write patterns differ significantly.
+
+**Pythonic implementation:** Separate write model (source of truth) and read model (pre-computed projection). Commands modify; queries fetch:
+
+```python
+COMMANDS_COLL = "ticket_commands"   # write side
+READS_COLL = "ticket_reads"        # read projection
+
+async def project_ticket(db, ticket_id: str) -> None:
+    doc = await db[COMMANDS_COLL].find_one({"_id": ticket_id})
+    read_doc = {"preview": make_preview(doc["message"]), "has_note": bool(doc.get("agent_note"))}
+    await db[READS_COLL].update_one({"_id": ticket_id}, {"$set": read_doc}, upsert=True)
+```
+
+→ Full reference: `patterns/cqrs.md`
+
+### Builder
+
+**Recognize:** Complex object construction with many optional parts; construction steps matter.
+
+**Pythonic implementation:** Fluent API with `Self` return type; `.build()` returns frozen product:
+
+```python
+class HTMLBuilder:
+    def set_title(self, title: str) -> Self:
+        self._title = title
+        return self
+
+    def build(self) -> HTMLPage:
+        return HTMLPage(self._title, self._metadata, self._body)
+
+page = HTMLBuilder().set_title("Demo").add_header("Hello").build()
+```
+
+→ Full reference: `patterns/builder.md`
+
+### Unit of Work
+
+**Recognize:** Multiple database operations that must succeed or fail together.
+
+**Pythonic implementation:** Context manager wrapping a transaction:
+
+```python
+class UnitOfWork:
+    def __enter__(self) -> "UnitOfWork":
+        self.connection = sqlite3.connect(self.db_name)
+        self.connection.execute("BEGIN")
+        self.repository = Repository(self.connection)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        if exc_val:
+            self.connection.rollback()
+        else:
+            self.connection.commit()
+        self.connection.close()
+```
+
+→ Full reference: `patterns/unit-of-work.md`
+
+### Singleton
+
+**Recognize:** Need exactly one instance of a resource (config, connection pool, model loader).
+
+**Pythonic implementation (preferred):** Module-level instance — Python modules are natural singletons:
+
+```python
+# config.py
+db_uri = "sqlite:///:memory:"
+debug = True
+
+# usage: import config; config.debug
+```
+
+When a class is needed, use a metaclass with `_instances` dict.
+
+→ Full reference: `patterns/singleton.md`

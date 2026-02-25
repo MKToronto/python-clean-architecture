@@ -82,6 +82,59 @@ Minimize dependencies between classes, functions, and modules.
 6. **Data Coupling** — Sharing data via parameters. Normal and expected.
 7. **Message Coupling** — Communication via events/messages. Lightest coupling.
 
+### Coupling Examples (Before/After)
+
+**Content Coupling** — directly accessing another class's private state:
+
+```python
+# BAD: reaches into Account internals
+def pay_service_fee(account: Account, payment_type: PaymentType) -> None:
+    account._balance -= SERVICE_FEES[payment_type]
+
+# GOOD: use the class's own method
+def pay_service_fee(account: Account, payment_type: PaymentType) -> None:
+    account.withdraw_unsafe(SERVICE_FEES[payment_type])
+```
+
+**Global Coupling** — module-level constants used directly by functions:
+
+```python
+# BAD: function depends on global state
+API_URL = "https://api.company.com"
+TOKEN = "a3f5c7e8..."
+
+def make_request(path: str, data: dict | None = None) -> None:
+    headers = {"Authorization": f"Bearer {TOKEN}"}
+    fullpath = f"{API_URL}/{path}"
+
+# GOOD: encapsulate configuration in a dataclass
+@dataclass
+class APIClient:
+    api_url: str
+    token: str
+
+    def post(self, path: str, data: dict | None = None) -> None:
+        headers = {"Authorization": f"Bearer {self.token}"}
+        fullpath = f"{self.api_url}/{path}"
+```
+
+**Stamp Coupling** — passing an entire object when only part is needed:
+
+```python
+# BAD: log_transaction receives full Transaction but only uses 3 fields
+def log_transaction(transaction: Transaction) -> None:
+    print(f"Logging {transaction.transaction_type} ID {transaction.transaction_id}")
+
+# GOOD: accept a Protocol with only the fields needed
+class LoggableTransaction(Protocol):
+    transaction_id: int
+    transaction_type: TransactionType
+    timestamp: datetime
+
+def log_transaction(transaction: LoggableTransaction) -> None:
+    print(f"Logging {transaction.transaction_type} ID {transaction.transaction_id}")
+```
+
 ### Law of Demeter (Principle of Least Knowledge)
 
 A unit of code should only talk to closely related units. Never chain through multiple objects.
