@@ -336,3 +336,92 @@ This approach enables extending the system without modifying existing code. Use 
 - `**kwargs` unpacking ties function parameter names to JSON key names. A mismatch produces a `TypeError` at runtime.
 - The plugin system uses module-level side effects (self-registration on import). Keep plugin modules small and focused.
 - For very large plugin systems, consider entry points (`importlib.metadata`) or a package discovery mechanism instead of listing plugins in config.
+
+---
+
+## Plugin Discovery
+
+For systems beyond the basic plugin list in JSON, use these discovery mechanisms.
+
+### Directory Scanning
+
+Automatically find and load all plugin modules in a directory:
+
+```python
+import os
+from importlib import import_module
+from pathlib import Path
+
+def discover_plugins(plugin_dir: str = "plugins") -> list[str]:
+    plugin_path = Path(plugin_dir)
+    return [
+        f"{plugin_dir}.{f.stem}"
+        for f in plugin_path.glob("*.py")
+        if not f.name.startswith("_")
+    ]
+
+def load_all_plugins(plugin_dir: str = "plugins") -> None:
+    for name in discover_plugins(plugin_dir):
+        module = import_module(name)
+        if hasattr(module, "register"):
+            module.register()
+```
+
+### `importlib.metadata` Entry Points (Modern Approach)
+
+For distributable plugins installed as packages, use entry points — the standard mechanism used by pytest, Flask, and other frameworks:
+
+```python
+from importlib.metadata import entry_points
+
+def load_installed_plugins() -> None:
+    plugins = entry_points(group="myapp.plugins")
+    for plugin in plugins:
+        fn = plugin.load()  # loads the registered callable
+        fn()  # call its registration function
+```
+
+Plugins declare themselves in `pyproject.toml`:
+
+```toml
+[project.entry-points."myapp.plugins"]
+inject = "mypackage.inject:register"
+```
+
+### Plugin Validation via Protocol Conformance
+
+Verify that loaded plugins satisfy the expected interface before registration:
+
+```python
+from typing import Protocol, runtime_checkable
+
+@runtime_checkable
+class TaskPlugin(Protocol):
+    def run(self) -> None: ...
+
+def register_validated(task_type: str, task_class: type) -> None:
+    if not issubclass(task_class, TaskPlugin):
+        raise TypeError(f"{task_class.__name__} does not satisfy TaskPlugin protocol")
+    _task_functions[task_type] = task_class
+```
+
+Use `@runtime_checkable` to enable `isinstance` / `issubclass` checks against the Protocol at runtime.
+
+### Error Handling for Broken Plugins
+
+Plugins loaded at runtime can fail. Isolate failures so one broken plugin doesn't crash the whole system:
+
+```python
+import logging
+
+def load_plugins_safely(plugin_names: list[str]) -> None:
+    for name in plugin_names:
+        try:
+            module = import_module(name)
+            if hasattr(module, "register"):
+                module.register()
+        except Exception:
+            logging.exception(f"Failed to load plugin: {name}")
+```
+
+For a complete plugin architecture guide (including Protocol-based interfaces, config-driven creation, and self-registering plugins), see `patterns/plugin-architecture.md`.

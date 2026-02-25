@@ -271,6 +271,75 @@ app.include_router(bookings.router)
 
 ---
 
+## SQLAlchemy Relationships
+
+When entities reference each other (e.g., a Booking references a Room), use ForeignKey and `relationship()`.
+
+### Defining Relationships
+
+```python
+from sqlalchemy import Column, String, Integer, ForeignKey, Date
+from sqlalchemy.orm import relationship
+from db.database import Base
+
+class DBRoom(Base):
+    __tablename__ = "rooms"
+    id = Column(String, primary_key=True)
+    number = Column(String, nullable=False)
+    size = Column(Integer, nullable=False)
+    price = Column(Integer, nullable=False)
+    bookings = relationship("DBBooking", back_populates="room", cascade="all, delete-orphan")
+
+class DBBooking(Base):
+    __tablename__ = "bookings"
+    id = Column(String, primary_key=True)
+    room_id = Column(String, ForeignKey("rooms.id"), nullable=False)
+    customer_id = Column(String, ForeignKey("customers.id"), nullable=False)
+    from_date = Column(Date, nullable=False)
+    to_date = Column(Date, nullable=False)
+    price = Column(Integer, nullable=False)
+    room = relationship("DBRoom", back_populates="bookings")
+```
+
+### Cascade Delete
+
+`cascade="all, delete-orphan"` on the parent side means deleting a Room automatically deletes its Bookings. Use this when child entities have no meaning without the parent.
+
+### Serializing Nested Relationships in `to_dict()`
+
+The basic `to_dict()` only serializes columns. For nested relationships, extend it:
+
+```python
+def to_dict(obj, include_relations: list[str] | None = None) -> DataObject:
+    result = {col.name: getattr(obj, col.name) for col in obj.__table__.columns}
+    if include_relations:
+        for rel in include_relations:
+            related = getattr(obj, rel, None)
+            if isinstance(related, list):
+                result[rel] = [to_dict(item) for item in related]
+            elif related is not None:
+                result[rel] = to_dict(related)
+    return result
+```
+
+### Eager vs Lazy Loading
+
+By default, SQLAlchemy loads relationships lazily (on first access). This causes N+1 query problems when serializing lists.
+
+```python
+from sqlalchemy.orm import joinedload, selectinload
+
+# Eager load in one query (JOIN) — good for single-object fetches
+session.query(DBRoom).options(joinedload(DBRoom.bookings)).get(room_id)
+
+# Eager load via separate SELECT — good for list queries (avoids cartesian product)
+session.query(DBRoom).options(selectinload(DBRoom.bookings)).all()
+```
+
+**Rule of thumb:** Use `selectinload` for collections (one-to-many), `joinedload` for single objects (many-to-one).
+
+---
+
 ## Adding a New Entity Checklist
 
 When adding a new entity (e.g., "bookings") to an existing project:

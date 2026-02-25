@@ -108,6 +108,9 @@ When encountering these code smells, apply the corresponding pattern:
 | Object behaves differently depending on internal state | State | Protocol-based state objects, context delegates to current state |
 | Incompatible interface from external library | Adapter | Protocol interface + `functools.partial` for single-method adaptation |
 | Client coupled to complex subsystem details | Facade | Simplified interface class, `functools.partial` to bind dependencies |
+| Transient failures in external API/DB calls | Retry | `@retry` decorator with exponential backoff, fallback strategies |
+| Slow startup loading unused resources | Lazy Loading | `functools.cache`, `cached_property`, generators, `__getattr__` |
+| Need extensibility without modifying core code | Plugin Architecture | Config-driven creation, `importlib` auto-discovery, self-registering modules |
 
 ### Default preferences for all patterns:
 
@@ -176,6 +179,8 @@ For detailed guidance beyond this overview, consult:
 - **`references/design-principles.md`** — Full treatment of the seven design principles with refactoring recipes and code examples
 - **`references/layered-architecture.md`** — Detailed three-layer architecture guide: DataInterface, DBInterface, router composition, Pydantic models, to_dict utility
 - **`references/testable-api.md`** — Testing strategy: stub-based testing, DataInterfaceStub, test isolation, no-database testing
+- **`references/testing-advanced.md`** — Pytest organization, property-based testing (Hypothesis), model-based stateful testing, code coverage philosophy
+- **`references/rest-api-design.md`** — HTTP method semantics, status codes, resource naming, pagination, error response format, OpenAPI, versioning
 
 **Python Fundamentals:**
 - **`references/classes-and-dataclasses.md`** — When to use classes vs dataclasses, @dataclass, field(), frozen, encapsulation
@@ -192,7 +197,7 @@ For detailed guidance beyond this overview, consult:
 - **`references/pattern-matching.md`** — Structural pattern matching (`match`/`case`): literal, capture, OR, sequence, class, mapping patterns, guard clauses
 
 **Pythonic Patterns:**
-- **`references/pythonic-patterns.md`** — Quick reference lookup table for all 20 patterns (use for reviews and pattern selection)
+- **`references/pythonic-patterns.md`** — Quick reference lookup table for all 23 patterns (use for reviews and pattern selection)
 
 **Pythonic Patterns (full progressions from OOP → functional):**
 - **`references/patterns/strategy.md`** — Callable type alias, closures, functools.partial
@@ -204,6 +209,9 @@ For detailed guidance beyond this overview, consult:
 - **`references/patterns/template-method.md`** — Free function + Protocol parameters, protocol segregation
 - **`references/patterns/pipeline.md`** — Chain of Responsibility, functools.reduce composition, pandas .pipe()
 - **`references/patterns/functional.md`** — Callback, Function Wrapper, Function Builder patterns
+- **`references/patterns/retry.md`** — Exponential backoff, `@retry` decorator, fallback strategies, tenacity library
+- **`references/patterns/lazy-loading.md`** — `functools.cache`, `cached_property`, generators, TTL cache, background preloading
+- **`references/patterns/plugin-architecture.md`** — Config-driven plugins, `importlib` auto-discovery, self-registering modules, Protocol conformance
 
 **Architectural & Domain Patterns:**
 - **`references/patterns/value-objects.md`** — Wrapping primitives in validated domain types: Price, Percentage, EmailAddress

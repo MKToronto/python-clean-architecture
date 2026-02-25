@@ -490,3 +490,80 @@ power_fn = partial(power_speaker, facade)  # Callable[[bool], None]
 ```
 
 → Full reference: `patterns/facade.md`
+
+### Retry
+
+**Recognize:** External API/database calls fail intermittently due to transient errors (timeouts, rate limits, temporary unavailability).
+
+**Pythonic implementation:** `@retry` decorator with exponential backoff using `functools.wraps`:
+
+```python
+import functools
+import time
+
+def retry(retries: int = 3, delay: float = 1.0, exceptions: tuple = (Exception,)):
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            for attempt in range(retries):
+                try:
+                    return fn(*args, **kwargs)
+                except exceptions:
+                    if attempt == retries - 1:
+                        raise
+                    time.sleep(delay * (2 ** attempt))
+        return wrapper
+    return decorator
+
+@retry(retries=5, exceptions=(ConnectionError, TimeoutError))
+def fetch_price(symbol: str) -> float:
+    return requests.get(f"https://api.example.com/price/{symbol}").json()["price"]
+```
+
+→ Full reference: `patterns/retry.md`
+
+### Lazy Loading
+
+**Recognize:** Application startup is slow because it loads all data/models/resources upfront, even if many are never used.
+
+**Pythonic implementation:** `functools.cache` for computed-once values, `cached_property` for class attributes, generators for streaming:
+
+```python
+from functools import cache, cached_property
+
+@cache
+def load_model(name: str) -> Model:
+    return Model.from_pretrained(name)  # loaded once, cached forever
+
+class DataPipeline:
+    @cached_property
+    def config(self) -> dict:
+        with open(self.config_path) as f:
+            return json.load(f)  # loaded on first access
+```
+
+→ Full reference: `patterns/lazy-loading.md`
+
+### Plugin Architecture
+
+**Recognize:** Adding new features requires modifying imports and core code. Need post-deployment extensibility.
+
+**Pythonic implementation:** Registry + `importlib.import_module` + self-registering modules:
+
+```python
+# plugins/bard.py — self-registers when imported
+from game.factory import register
+
+@dataclass
+class Bard:
+    name: str
+    def make_noise(self) -> None:
+        print(f"{self.name} plays the flute")
+
+class PluginInterface:
+    @staticmethod
+    def initialize() -> None:
+        register("bard", Bard)
+```
+
+→ Full reference: `patterns/plugin-architecture.md`

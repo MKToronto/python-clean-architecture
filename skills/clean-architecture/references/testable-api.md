@@ -346,3 +346,14 @@ When adding tests for a new entity:
 6. Test with multiple entities: ensure operations work with populated data
 7. Use test-specific stub subclasses for failure scenarios
 8. Use `pytest.mark.parametrize` for input/output variations
+
+---
+
+## Beyond Unit Tests
+
+For advanced testing techniques beyond the stub-based approach covered here, see **`testing-advanced.md`**:
+
+- **Pytest organization** — `conftest.py` fixtures, CLI options, project structure conventions
+- **Property-based testing** with Hypothesis — test properties that hold for any valid input, not just specific examples; catches edge cases humans miss
+- **Model-based (stateful) testing** — generate random sequences of operations to find bugs in stateful systems (orders, workflows, state machines)
+- **Code coverage philosophy** — why 100% coverage misleads, focus on branch coverage and meaningful assertions over line coverage metrics
