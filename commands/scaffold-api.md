@@ -14,22 +14,22 @@ Generate a new FastAPI project named `$ARGUMENTS` with the three-layer clean arc
 
    ```
    {project_name}/
-   ├── src/
-   │   ├── main.py                  # FastAPI app, include_router, startup
-   │   ├── routers/
-   │   │   ├── __init__.py
-   │   │   └── {entity}.py          # APIRouter, endpoints, composition root
-   │   ├── operations/
-   │   │   ├── __init__.py
-   │   │   └── {entity}.py          # Business logic, accepts DataInterface
-   │   ├── db/
-   │   │   ├── __init__.py
-   │   │   ├── database.py          # Engine, SessionLocal, Base
-   │   │   ├── db_interface.py      # Generic DBInterface implementing DataInterface
-   │   │   └── models.py            # SQLAlchemy ORM models
-   │   └── models/
-   │       ├── __init__.py
-   │       └── {entity}.py          # Pydantic models + DataInterface Protocol
+   ├── main.py                      # FastAPI app, include_router, startup
+   ├── routers/
+   │   ├── __init__.py
+   │   └── {entity}.py              # APIRouter, endpoints, composition root
+   ├── operations/
+   │   ├── __init__.py
+   │   ├── interface.py             # DataInterface Protocol + DataInterfaceStub
+   │   └── {entity}.py              # Business logic, accepts DataInterface
+   ├── db/
+   │   ├── __init__.py
+   │   ├── database.py              # Engine, SessionLocal, Base
+   │   ├── db_interface.py          # Generic DBInterface implementing DataInterface
+   │   └── models.py                # SQLAlchemy ORM models
+   ├── models/
+   │   ├── __init__.py
+   │   └── {entity}.py              # Pydantic Create/Read models
    ├── tests/
    │   ├── __init__.py
    │   └── test_{entity}.py         # Tests using DataInterfaceStub
@@ -38,7 +38,7 @@ Generate a new FastAPI project named `$ARGUMENTS` with the three-layer clean arc
    ```
 
 3. **Generate files** — For each entity, create:
-   - **Pydantic models** — separate Create and Read models + `DataInterface` Protocol
+   - **Pydantic models** — separate Create and Read models
    - **Operations** — business logic functions accepting `data_interface: DataInterface`
    - **Router** — CRUD endpoints acting as composition root, injecting concrete DB
    - **DB model** — SQLAlchemy ORM model

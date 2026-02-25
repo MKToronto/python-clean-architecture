@@ -380,7 +380,7 @@ session.scalars(select(DBRoom).options(selectinload(DBRoom.bookings))).all()
 
 When adding a new entity (e.g., "bookings") to an existing project:
 
-1. **models/{entity}.py** — Define Pydantic Create, Update, and Read models. Define `DataInterface` Protocol if not using a shared one.
+1. **models/{entity}.py** — Define Pydantic Create, Update, and Read models. The `DataInterface` Protocol lives in `operations/interface.py`.
 2. **db/models.py** — Add SQLAlchemy model class (e.g., `DBBooking`).
 3. **operations/{entity}.py** — Write business logic functions accepting `DataInterface`. Include any computed values.
 4. **routers/{entity}.py** — Create `APIRouter`. Wire up endpoints, instantiate `DBInterface`, call operations.
