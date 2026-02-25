@@ -29,7 +29,7 @@ Then review the code at `$ARGUMENTS` (or the current working directory if no pat
    - **Start with the Data** — Prefixed fields? Parallel lists? Methods far from data?
    - **Keep Things Simple** — Over-engineered? Speculative features? Unnecessary abstractions?
 
-4. **Check code quality** — Apply the 17 design rules:
+4. **Check code quality** — Apply the 22 design rules:
    - No type abuse, vague identifiers, flag parameters, deep nesting
    - Tell don't ask, no parallel data structures, no god classes
    - No broad exception catching, no mutable defaults, no wildcard imports

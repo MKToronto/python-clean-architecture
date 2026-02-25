@@ -310,6 +310,25 @@ class User(BaseModel):
 
 > `EmailStr` requires `pip install pydantic[email]` (uses the `email-validator` package).
 
+### Decimal for Currency and Financial Data
+
+Never use `float` for money — floating-point arithmetic causes rounding errors (`0.1 + 0.2 != 0.3`). Use `Decimal` with explicit precision:
+
+```python
+from decimal import Decimal
+from pydantic import BaseModel, Field
+
+class Invoice(BaseModel):
+    amount: Decimal = Field(ge=0, decimal_places=2)
+    tax_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
+
+    @property
+    def total(self) -> Decimal:
+        return (self.amount * (1 + self.tax_rate)).quantize(Decimal("0.01"))
+```
+
+Alternatively, use **integer cents** (as shown throughout this plugin's examples) — `price: int` where 100 means $1.00. This avoids floating-point entirely and simplifies arithmetic. The cents approach is Arjan's preferred convention.
+
 ---
 
 ## 7. Patterns for the Three-Layer Architecture

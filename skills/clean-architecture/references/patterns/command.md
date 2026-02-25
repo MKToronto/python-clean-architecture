@@ -209,6 +209,63 @@ def main() -> None:
 
 Batches can nest inside other batches, forming a composite tree. The controller still sees a single command.
 
+### Batch Rollback on Failure
+
+When any command in a batch fails, undo all previously-executed commands in reverse order:
+
+```python
+@dataclass
+class SafeBatch:
+    commands: list[Command] = field(default_factory=list)
+
+    def execute(self) -> None:
+        executed: list[Command] = []
+        try:
+            for command in self.commands:
+                command.execute()
+                executed.append(command)
+        except Exception:
+            for command in reversed(executed):
+                command.undo()
+            raise
+
+    def undo(self) -> None:
+        for command in reversed(self.commands):
+            command.undo()
+```
+
+This gives batch execution transactional semantics — either all commands succeed, or the system returns to its previous state.
+
+### Redo Stack
+
+Extend the controller with a redo stack. When the user undoes a command, push it onto the redo stack. When they redo, pop from redo and re-execute. Any new command execution clears the redo stack (the redo history is no longer valid).
+
+```python
+@dataclass
+class TextController:
+    undo_stack: list[Command] = field(default_factory=list)
+    redo_stack: list[Command] = field(default_factory=list)
+
+    def execute(self, command: Command) -> None:
+        command.execute()
+        self.undo_stack.append(command)
+        self.redo_stack.clear()  # new action invalidates redo history
+
+    def undo(self) -> None:
+        if not self.undo_stack:
+            return
+        command = self.undo_stack.pop()
+        command.undo()
+        self.redo_stack.append(command)
+
+    def redo(self) -> None:
+        if not self.redo_stack:
+            return
+        command = self.redo_stack.pop()
+        command.execute()
+        self.undo_stack.append(command)
+```
+
 ---
 
 ## 4. Pythonic Progression

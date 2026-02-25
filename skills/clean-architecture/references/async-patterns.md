@@ -377,3 +377,39 @@ async def test_create_booking_computes_price():
 | Mixing sync DB driver with async handler | Blocks event loop during queries | Use async driver (`asyncpg`, `aiosqlite`) |
 | Forgetting `await` on a coroutine | Returns coroutine object instead of result | Always `await` async calls |
 | Using sync file I/O in async code | Blocks event loop | Use `aiofiles` or run in executor |
+
+---
+
+## 8. Scaling FastAPI with Multiple Workers
+
+A single FastAPI process runs one event loop on one CPU core. To use all cores, run multiple worker processes behind a process manager.
+
+### Gunicorn + Uvicorn Workers
+
+```bash
+# Run 4 worker processes, each with its own event loop
+gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+```
+
+**Rule of thumb:** Set workers to `2 * CPU_cores + 1`. For a 4-core machine: 9 workers.
+
+### When to Scale Workers vs Async
+
+| Bottleneck | Solution |
+|---|---|
+| I/O-bound (database, HTTP calls) | Use `async def` + `await` — one worker handles many concurrent requests |
+| CPU-bound (data processing, ML inference) | Add more Gunicorn workers — each runs on a separate core |
+| Both | Combine: multiple workers with async handlers |
+
+### Docker Deployment
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["gunicorn", "main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
+```
+
+For Kubernetes or similar orchestrators, prefer running a single Uvicorn worker per container and letting the orchestrator handle scaling (one process per pod is simpler to monitor and restart).

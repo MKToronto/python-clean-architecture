@@ -140,6 +140,52 @@ async def predict(text: str):
 - **Configuration** — load config files only when settings are actually accessed
 - **Database connections** — create connection pools lazily at first query
 
+## Common Pitfalls
+
+### Lazy Without Cache
+
+Computing a value lazily but forgetting to cache the result. The expensive computation runs on every access:
+
+```python
+# BAD: lazy but not cached — reloads model every time
+def get_model() -> Model:
+    return Model.from_pretrained("large-model")  # expensive every call
+
+# GOOD: @cache ensures it loads once
+@cache
+def get_model() -> Model:
+    return Model.from_pretrained("large-model")
+```
+
+### Early Break with Generators
+
+Generators only compute values as consumed. When you only need the first match, use `next()` or a loop with `break` — the remaining items are never computed:
+
+```python
+def find_first_match(items: Iterable[Item], predicate: Callable[[Item], bool]) -> Item | None:
+    return next((item for item in items if predicate(item)), None)
+```
+
+This is especially powerful for large datasets where scanning everything would be wasteful.
+
+### Caching Mutable Data
+
+If the cached value is mutable (a list or dict), consumers can accidentally modify the shared cached copy:
+
+```python
+# DANGER: cached list is shared — mutations affect all callers
+@cache
+def get_settings() -> dict:
+    return {"debug": True, "level": "INFO"}
+
+settings = get_settings()
+settings["debug"] = False  # modifies the cached copy!
+```
+
+Fix by returning frozen structures (`tuple`, `frozenset`, frozen dataclass) or by returning copies.
+
+---
+
 ## When NOT to Use
 
 - **Small, fast resources** — lazy loading adds complexity for negligible savings

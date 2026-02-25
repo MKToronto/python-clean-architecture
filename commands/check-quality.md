@@ -1,16 +1,16 @@
 ---
 name: check-quality
-description: Quick code quality check against the 17 design rules
+description: Quick code quality check against the 22 design rules
 argument-hint: [path]
 ---
 
-Run a focused code quality check on `$ARGUMENTS` (or the current working directory if no path given) against the 17 design rules. This is a lighter, faster check than `/review-architecture`.
+Run a focused code quality check on `$ARGUMENTS` (or the current working directory if no path given) against the 22 design rules. This is a lighter, faster check than `/review-architecture`.
 
 ## Process
 
 1. **Read the code** — Find and read ALL Python files in the target path recursively.
 
-2. **Check the 17 rules** — For each file, check:
+2. **Check the 22 rules** — For each file, check:
 
    **Naming & Structure:**
    1. No type abuse (don't embed type in name: `user_list` → `users`)
@@ -38,6 +38,13 @@ Run a focused code quality check on `$ARGUMENTS` (or the current working directo
    **Error Handling:**
    16. No broad exception catching (`except Exception` → catch specific exceptions)
    17. Context managers for resources (`with open()` not manual try/finally)
+
+   **Advanced Design:**
+   18. No isinstance checks for dispatch (move behavior into the class hierarchy or use a strategy dict)
+   19. No overloaded classes (too many instance variables → extract cohesive groups)
+   20. No asymmetric naming (consistent method names across similar classes, use dunder methods)
+   21. No misleading method names (`create_X` should create and return, `add_X` should add to collection)
+   22. No hardwired initialization sequences (factory method or `__init__` guarantees complete setup)
 
 3. **Report findings** — For each violation:
    - **Rule number and name**

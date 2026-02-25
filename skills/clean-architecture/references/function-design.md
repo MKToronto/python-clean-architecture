@@ -60,7 +60,44 @@ result = operations["add"](3, 4)  # 7
 
 ---
 
-## 2. Pure Functions
+## 2. Value Constraints and Fail-Fast
+
+Validate function inputs at the boundary — fail immediately with a clear error rather than propagating bad data deep into the system.
+
+```python
+# BAD: silently produces wrong result with negative price
+def compute_total(price: float, quantity: int) -> float:
+    return price * quantity
+
+# GOOD: fail fast on invalid input
+def compute_total(price: float, quantity: int) -> float:
+    if price < 0:
+        raise ValueError(f"Price must be non-negative, got {price}")
+    if quantity < 0:
+        raise ValueError(f"Quantity must be non-negative, got {quantity}")
+    return price * quantity
+```
+
+**Where to validate:** At system boundaries — function entry points, API endpoints, constructors. Internal helper functions called only by already-validated code can trust their inputs.
+
+**Return value conventions:** Prefer raising exceptions for errors over returning `None` or sentinel values. A function that returns `Optional[X]` forces every caller to check for `None`. A function that raises makes the happy path clean and the error path explicit.
+
+```python
+# AVOID: caller must check for None
+def find_user(user_id: str) -> User | None:
+    ...
+
+# PREFER: caller gets a User or an exception
+def find_user(user_id: str) -> User:
+    user = db.get(user_id)
+    if user is None:
+        raise NotFoundError(f"User not found: {user_id}")
+    return user
+```
+
+---
+
+## 3. Pure Functions
 
 A pure function produces the same output for the same inputs every time. It reads nothing from the outside world and changes nothing in it.
 
@@ -99,7 +136,7 @@ def test_compute_total():
 
 ---
 
-## 3. Side Effects
+## 4. Side Effects
 
 A side effect is any observable change a function makes outside its own scope: modifying a global variable, writing to a file, mutating an argument, printing to the console.
 
@@ -170,7 +207,7 @@ def process_discount(
 
 ---
 
-## 4. Higher-Order Functions
+## 5. Higher-Order Functions
 
 A higher-order function either accepts a function as an argument or returns a function as its result. This is the mechanism behind strategy injection, callback patterns, and decorators.
 
@@ -287,7 +324,7 @@ Use `Iterable` as the parameter type. This accepts lists, tuples, sets, or gener
 
 ---
 
-## 5. Closures
+## 6. Closures
 
 A closure is a nested function that captures variables from its enclosing scope. Use closures to separate configuration-time arguments from call-time arguments.
 
@@ -353,7 +390,7 @@ orders = run_query("SELECT * FROM orders")
 
 ---
 
-## 6. `functools.partial`
+## 7. `functools.partial`
 
 `functools.partial` pre-fills arguments on an existing function and returns a new callable with fewer parameters. It achieves the same result as a closure but without writing nested functions.
 
@@ -407,7 +444,7 @@ print(validate_temperature(-300.0)) # False
 
 ---
 
-## 7. Lambda Functions
+## 8. Lambda Functions
 
 A lambda is a short, anonymous, inline callable limited to a single expression. Use lambdas when a full `def` statement would be overkill.
 
@@ -482,7 +519,30 @@ def compute_order_total(order: Order) -> float:
 
 ---
 
-## 8. When to Use Classes vs Functions vs Modules
+## 9. Function Header Design Rules
+
+Well-designed function signatures communicate intent and prevent misuse:
+
+- **Be specific in arguments, generic in returns.** Accept the narrowest type that works (`list[str]` not `Any`), but return the most specific type available. This makes calls type-safe and results useful.
+- **Limit to 3-4 parameters.** When a function needs more, group related parameters into a dataclass or use keyword-only arguments (`*` separator).
+- **Use keyword-only arguments for clarity.** Force callers to name ambiguous arguments:
+
+```python
+# BAD: what does True mean?
+create_user("Alice", True, False)
+
+# GOOD: keyword-only after *
+def create_user(name: str, *, is_admin: bool = False, send_welcome: bool = True) -> User:
+    ...
+
+create_user("Alice", is_admin=True, send_welcome=False)
+```
+
+- **Default arguments must be immutable.** Never use `[]`, `{}`, or `set()` as defaults. Use `None` and create inside the body, or `field(default_factory=list)` in dataclasses. See Rule 14 in `code-quality.md`.
+
+---
+
+## 10. When to Use Classes vs Functions vs Modules
 
 There is no rigid rule. Choose the mechanism that matches the structure of the problem.
 

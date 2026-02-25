@@ -176,6 +176,29 @@ The `TradingBot` ABC stores `self.exchange` typed as `Exchange` (the abstract cl
 
 Think of it as the **depend on abstractions** principle applied structurally: two class trees, one abstract reference joining them.
 
+### When ABC is the right choice for Bridge
+
+The ABC-based bridge has a unique advantage: the abstract superclass can store **shared state** (`self.exchange`) that all subclasses inherit. With Protocols, each concrete bot must declare its own `exchange` attribute — duplication that grows with the number of concrete implementations. If the bridge side carries multiple shared attributes or helper methods, ABC eliminates that repetition:
+
+```python
+class TradingBot(ABC):
+    def __init__(self, exchange: Exchange, risk_limit: int = 1000) -> None:
+        self.exchange = exchange
+        self.risk_limit = risk_limit
+
+    def _check_risk(self, amount: int) -> bool:
+        """Shared helper — available to all concrete bots."""
+        return amount <= self.risk_limit
+
+    @abstractmethod
+    def should_buy(self, symbol: str) -> bool: ...
+
+    @abstractmethod
+    def should_sell(self, symbol: str) -> bool: ...
+```
+
+This shared implementation cannot exist in a Protocol. Use ABC when the bridge superclass is more than just an interface — when it provides reusable behavior that concrete implementations build upon.
+
 ---
 
 ## 3. Pythonic Progression

@@ -376,6 +376,101 @@ session.scalars(select(DBRoom).options(selectinload(DBRoom.bookings))).all()
 
 ---
 
+## Scalable Project Structure
+
+For larger projects, add `config/` and cross-cutting concern modules alongside the three core layers:
+
+```
+{project_name}/
+├── main.py                      # FastAPI app, include_router, lifespan
+├── config/
+│   ├── __init__.py
+│   └── settings.py              # Pydantic BaseSettings, env vars
+├── routers/                     # Layer 1: HTTP/API
+│   ├── __init__.py
+│   └── {entity}.py
+├── operations/                  # Layer 2: Business logic
+│   ├── __init__.py
+│   ├── interface.py             # DataInterface Protocol + DataInterfaceStub
+│   └── {entity}.py
+├── db/                          # Layer 3: Persistence
+│   ├── __init__.py
+│   ├── database.py
+│   ├── db_interface.py
+│   └── models.py
+├── models/                      # Pydantic schemas (shared)
+│   ├── __init__.py
+│   └── {entity}.py
+├── tests/
+│   ├── conftest.py              # Shared fixtures
+│   └── test_{entity}.py
+├── requirements.txt
+└── .gitignore
+```
+
+### Environment Configuration with Pydantic Settings
+
+```python
+# config/settings.py
+from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
+
+class Settings(BaseSettings):
+    database_url: str = "sqlite:///./app.db"
+    debug: bool = False
+    api_title: str = "My API"
+
+    model_config = ConfigDict(env_file=".env")
+
+settings = Settings()
+```
+
+Use `settings.database_url` in `db/database.py` instead of hardcoding the URL.
+
+---
+
+## SQLModel Alternative
+
+SQLModel combines SQLAlchemy and Pydantic into one class — one model serves as both ORM model and API schema:
+
+```python
+from sqlmodel import SQLModel, Field
+
+class Room(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    number: str
+    size: int
+    price: int
+
+class RoomCreate(SQLModel):
+    number: str
+    size: int
+    price: int
+```
+
+**Advantages:** Less code, no `to_dict()` needed, single source of truth for field definitions.
+
+**Trade-off:** Tighter coupling between database and API schemas. When the database schema and API schema need to diverge (e.g., computed fields, different field names), separate SQLAlchemy + Pydantic models give more flexibility. For simple CRUD apps, SQLModel is an excellent choice.
+
+---
+
+## Production Readiness Checklist
+
+Before deploying a FastAPI application:
+
+- [ ] **Environment config** — All settings via environment variables or `.env` file (`pydantic-settings`)
+- [ ] **Health endpoint** — `GET /health` returning `{"status": "ok"}` (see `rest-api-design.md`)
+- [ ] **CORS configured** — `CORSMiddleware` with appropriate `allow_origins`
+- [ ] **Error handling** — Domain exceptions mapped to HTTP status codes (see `error-handling.md`)
+- [ ] **Input validation** — Pydantic models on all request bodies and query parameters
+- [ ] **Database migrations** — Alembic configured for schema evolution
+- [ ] **Logging** — Structured logging (not `print()`) with appropriate log levels
+- [ ] **Tests** — Operations tested with `DataInterfaceStub`, integration tests with test database
+- [ ] **Rate limiting** — SlowAPI or similar for public endpoints (see `rest-api-design.md`)
+- [ ] **Documentation** — OpenAPI docs enhanced with `summary`, `response_model`, `responses`
+
+---
+
 ## Adding a New Entity Checklist
 
 When adding a new entity (e.g., "bookings") to an existing project:

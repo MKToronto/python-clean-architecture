@@ -150,6 +150,40 @@ ax.legend(title="Color")
 
 ---
 
+## Builder vs Fluent Interface
+
+The builder pattern and fluent interfaces both use method chaining, but they are not the same thing:
+
+- **Builder** — separates construction from representation. A mutable builder accumulates state, then `.build()` produces an immutable product. The builder and product are different objects.
+- **Fluent Interface** — any API that returns `self` from methods to enable chaining. The chained object may or may not produce a separate product.
+
+```python
+# Builder: separate builder → product
+page = HTMLBuilder().set_title("Demo").add_paragraph("Hello").build()  # returns HTMLPage
+
+# Fluent Interface (NOT a builder): modifies the same object
+query = Query().select("name").where("age > 18").order_by("name")  # returns Query
+```
+
+Many Python libraries (pandas, matplotlib, SQLAlchemy query API) use fluent interfaces without being builders. The distinction matters because a builder enforces a construction/usage phase boundary that a plain fluent interface does not.
+
+---
+
+## Design Notes
+
+- **Rule of thumb:** Consider a builder when objects have 5+ optional configuration attributes, or when construction involves sequential steps with computed intermediate values.
+- **Forgetting `.build()`:** A common mistake is using the builder object as if it were the product. The builder is mutable and may not have the same interface. Make the product class clearly different (e.g., `frozen=True` dataclass) so the type checker catches this.
+- **Validation in `.build()`:** The builder can validate that required parts were set before constructing the product. Raise `ValueError` with a clear message if a required part is missing.
+
+```python
+def build(self) -> HTMLPage:
+    if not self._body:
+        raise ValueError("Cannot build an empty page — add at least one element")
+    return HTMLPage(self._title, self._metadata, list(self._body))
+```
+
+---
+
 ## Trade-offs
 
 | Advantage | Cost |

@@ -4,6 +4,12 @@ The class-based Singleton pattern is an anti-pattern in Python. If you need a si
 
 ---
 
+## Historical Context
+
+The Singleton pattern originated in Java/C++, where you cannot have module-level instances — everything must live in a class. Python's module system makes this unnecessary. A Python module is itself a singleton (imported once and cached by the runtime). When you see "use the Singleton pattern," in Python think "create a module-level instance" or "inject the dependency."
+
+---
+
 ## The Problem
 
 Some resources should exist exactly once: configuration, database connection pools, ML model loaders, loggers. Creating multiple instances wastes memory or causes conflicts.
@@ -182,6 +188,30 @@ def process_order(order: Order) -> None:
 def process_order(order: Order) -> None:
     config = Config()  # hidden singleton access
 ```
+
+---
+
+## Object Pool Variant
+
+When the cost of creating objects is high but you need more than one instance, use an **object pool** — a bounded collection of reusable instances. This is common for database connections and thread pools:
+
+```python
+from queue import Queue
+
+class ConnectionPool:
+    def __init__(self, max_size: int, factory: Callable[[], Connection]):
+        self._pool: Queue[Connection] = Queue(maxsize=max_size)
+        for _ in range(max_size):
+            self._pool.put(factory())
+
+    def acquire(self) -> Connection:
+        return self._pool.get()
+
+    def release(self, conn: Connection) -> None:
+        self._pool.put(conn)
+```
+
+SQLAlchemy's `create_engine()` creates a connection pool internally. FastAPI's `Depends(get_db)` acquires and releases connections from this pool per-request.
 
 ---
 
