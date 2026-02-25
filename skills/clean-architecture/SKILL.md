@@ -1,7 +1,7 @@
 ---
 name: Python Clean Architecture
 description: This skill should be used when the user asks to "scaffold a FastAPI project", "set up clean architecture", "refactor to clean architecture", "add a new endpoint", "add a router", "add an operation", "add a repository", "review my code structure", "apply design patterns in Python", "decouple my code", "improve code quality", "make my code testable", or mentions layered architecture, dependency injection, Protocol-based design, or Pythonic design patterns for Python/FastAPI projects.
-version: 0.8.0
+version: 0.8.1
 ---
 
 # Python Clean Architecture
