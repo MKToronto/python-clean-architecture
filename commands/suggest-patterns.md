@@ -4,7 +4,7 @@ description: Scan code and recommend Pythonic design patterns
 argument-hint: [path]
 ---
 
-Scan the code at `$ARGUMENTS` (or the current working directory if no path given) and recommend which of the 11 Pythonic design patterns would improve it.
+Scan the code at `$ARGUMENTS` (or the current working directory if no path given) and recommend which of the 23 Pythonic design patterns would improve it.
 
 ## Process
 
@@ -25,6 +25,18 @@ Scan the code at `$ARGUMENTS` (or the current working directory if no path given
    | Need to react to events without coupling | **Callback** | Function passed as argument |
    | Reusing a function with a different interface | **Function Wrapper** | Wraps another function, translates args |
    | Separating configuration from usage | **Function Builder** | Higher-order function returns configured function |
+   | Bare primitives for domain concepts (prices, emails) | **Value Objects** | Subclass built-in types with `__new__` validation, or frozen dataclass |
+   | Need audit trail, temporal queries, or event replay | **Event Sourcing** | Immutable `Event[T]`, append-only `EventStore[T]`, projection functions |
+   | Read/write patterns diverge; list views compute derived fields | **CQRS** | Separate write model + read projection, projector function after writes |
+   | Complex object with many optional parts | **Builder** | Fluent API with `Self` return type, `.build()` returns frozen product |
+   | Multiple DB writes that must succeed or fail together | **Unit of Work** | Context manager wrapping transaction: commit on success, rollback on error |
+   | Need exactly one instance of a shared resource | **Singleton** | Module-level instance (preferred), or metaclass with `_instances` dict |
+   | Object behaves differently depending on internal state | **State** | Protocol-based state objects, context delegates to current state |
+   | Incompatible interface from external library | **Adapter** | Protocol interface + `functools.partial` for single-method adaptation |
+   | Client coupled to complex subsystem details | **Facade** | Simplified interface class, `functools.partial` to bind dependencies |
+   | Transient failures in external API/DB calls | **Retry** | `@retry` decorator with exponential backoff, fallback strategies |
+   | Slow startup loading unused resources | **Lazy Loading** | `functools.cache`, `cached_property`, generators, `__getattr__` |
+   | Need extensibility without modifying core code | **Plugin Architecture** | Config-driven creation, `importlib` auto-discovery, self-registering modules |
 
 3. **Report suggestions** — For each match, show:
    - **File and line** — where the smell is

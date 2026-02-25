@@ -60,8 +60,6 @@ Or mention: layered architecture, dependency injection, Protocol-based design, P
 
 ### Slash Commands
 
-### Explicit (Slash Command)
-
 ```
 /review-architecture              Review current directory
 /review-architecture src/         Review a specific directory
