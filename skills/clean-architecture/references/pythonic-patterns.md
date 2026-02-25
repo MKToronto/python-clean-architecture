@@ -4,7 +4,7 @@ Classic design patterns reimagined for Python. This is a concise lookup table �
 
 ## General Rules
 
-- **Protocol over ABC** — unless shared state in the superclass is needed
+- **Protocol as default, ABC when needed** — use Protocol for loose coupling; use ABC when shared superclass state, instantiation-time error checking, or IDE "implement methods" assistance is needed
 - **`functools.partial`** — to configure generic functions rather than creating wrapper classes
 - **Closures** — to separate configuration-time args from runtime args
 - **`Callable` type aliases** — to replace single-method abstract classes
@@ -400,17 +400,19 @@ class UnitOfWork:
 
 **Recognize:** Need exactly one instance of a resource (config, connection pool, model loader).
 
-**Pythonic implementation (preferred):** Module-level instance — Python modules are natural singletons:
+**Preferred approach:** Dependency injection — pass the resource as an explicit parameter, create it in the composition root (`main()` or router layer). When DI creates excessive parameter-passing overhead, a module-level instance is an acceptable fallback:
 
 ```python
+# PREFERRED: dependency injection
+def process_order(order: Order, config: Config) -> None: ...
+
+# FALLBACK: module-level instance (still global state)
 # config.py
 db_uri = "sqlite:///:memory:"
 debug = True
-
-# usage: import config; config.debug
 ```
 
-When a class is needed, use a metaclass with `_instances` dict.
+Class-based Singleton (metaclass, `__new__`) is an anti-pattern in Python — avoid it.
 
 → Full reference: `patterns/singleton.md`
 
@@ -503,7 +505,7 @@ power_fn = partial(power_speaker, facade)  # Callable[[bool], None]
 import functools
 import time
 
-def retry(retries: int = 3, delay: float = 1.0, exceptions: tuple = (Exception,)):
+def retry(retries: int = 3, delay: float = 1.0, exceptions: tuple[type[Exception], ...] = (Exception,)):
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):

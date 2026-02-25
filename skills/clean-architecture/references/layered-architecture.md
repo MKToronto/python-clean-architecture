@@ -214,42 +214,69 @@ def create_booking(data: BookingCreate, data_interface: DataInterface,
 
 ## Router Layer (Composition Root)
 
-The router is where concrete database implementations are injected into operations.
+The router layer is the "single dirty place" — the conceptual composition root where concrete database implementations are chosen and injected into operations.
+
+### Production Approach: FastAPI `Depends()`
+
+Use FastAPI's built-in dependency injection to centralize dependency creation. This avoids repeating `SessionLocal()` and `DBInterface(...)` in every endpoint:
 
 ```python
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 from db.database import SessionLocal
 from db.db_interface import DBInterface
 from db.models import DBRoom
 from operations import room as room_ops
 from models.room import Room, RoomCreate
+from typing import Generator
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
+
+def get_db() -> Generator[Session, None, None]:
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+def get_room_interface(session: Session = Depends(get_db)) -> DBInterface:
+    return DBInterface(session, DBRoom)
+
+
+@router.get("/", response_model=list[Room])
+def read_all_rooms(data_interface: DBInterface = Depends(get_room_interface)):
+    return room_ops.read_all_rooms(data_interface)
+
+@router.get("/{room_id}", response_model=Room)
+def read_room(room_id: str, data_interface: DBInterface = Depends(get_room_interface)):
+    return room_ops.read_room(room_id, data_interface)
+
+@router.post("/", response_model=Room)
+def create_room(data: RoomCreate, data_interface: DBInterface = Depends(get_room_interface)):
+    return room_ops.create_room(data, data_interface)
+
+@router.delete("/{room_id}")
+def delete_room(room_id: str, data_interface: DBInterface = Depends(get_room_interface)):
+    return room_ops.delete_room(room_id, data_interface)
+```
+
+The dependency provider functions (`get_db`, `get_room_interface`) are the composition root — the single place where concrete wiring decisions are made. In tests, override them via `app.dependency_overrides[get_room_interface] = lambda: mock_interface`.
+
+### Teaching Simplification: Manual Injection
+
+For learning purposes, you may see the simpler pattern of creating dependencies directly in each endpoint:
+
+```python
 @router.get("/", response_model=list[Room])
 def read_all_rooms():
     session = SessionLocal()
     data_interface = DBInterface(session, DBRoom)
     return room_ops.read_all_rooms(data_interface)
-
-@router.get("/{room_id}", response_model=Room)
-def read_room(room_id: str):
-    session = SessionLocal()
-    data_interface = DBInterface(session, DBRoom)
-    return room_ops.read_room(room_id, data_interface)
-
-@router.post("/", response_model=Room)
-def create_room(data: RoomCreate):
-    session = SessionLocal()
-    data_interface = DBInterface(session, DBRoom)
-    return room_ops.create_room(data, data_interface)
-
-@router.delete("/{room_id}")
-def delete_room(room_id: str):
-    session = SessionLocal()
-    data_interface = DBInterface(session, DBRoom)
-    return room_ops.delete_room(room_id, data_interface)
 ```
+
+This demonstrates the same principle (router as composition root) but repeats the wiring in every endpoint. The `Depends()` approach above is preferred for production code.
 
 ### Main App
 

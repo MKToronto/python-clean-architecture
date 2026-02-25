@@ -554,3 +554,31 @@ def apply_discount(total: float, discount_pct: float) -> float:
 ### The General Rule
 
 Keep classes either data-focused (mostly fields, few methods) or behavior-focused (mostly methods, few fields). If a class is behavior-focused with no meaningful state, replace it with a module of functions. Your code will be shorter, and your tests will be simpler.
+
+### When to Convert a Single-Method Class to a Function
+
+Pattern files show progressions from class-based to functional implementations. Use these criteria to decide when the conversion is appropriate:
+
+**Convert to a plain function when:**
+- The class has a single method and no instance state
+- The class has no meaningful data — it's just wrapping a function
+- You don't need multiple instances with different configurations
+
+**Keep as a callable class (`__call__` + dataclass) when:**
+- The class stores configuration that differs between instances (e.g., `PercentageDiscount(percentage=0.15)`)
+- You need named, inspectable configuration — `partial` loses parameter names in type checkers
+- The callable carries mutable state between invocations (counter, cache)
+
+**Use a closure / function builder when:**
+- Configuration-time arguments differ in kind from runtime arguments
+- You want to build specialized functions from a generic template
+- The closure is short (1-3 lines); longer logic belongs in a class or named inner function
+
+**Use `functools.partial` when:**
+- Configuration arguments are a subset of the function's regular parameters
+- You don't need type checker precision on the returned callable
+
+**Don't convert when:**
+- The functional version becomes less readable (e.g., `partial` everywhere loses clarity — a class provides context more naturally)
+- The class produces complex objects, not simple return values
+- A two-branch `if/else` that will never grow doesn't need a strategy pattern at all (KISS)

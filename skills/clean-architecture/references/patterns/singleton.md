@@ -1,6 +1,6 @@
 # Singleton
 
-Ensure a class has only one instance. In Python, the preferred approach is the module-level instance — Python's module system is a natural singleton mechanism.
+The class-based Singleton pattern is an anti-pattern in Python. If you need a single shared resource, the preferred approach is **dependency injection** — pass the resource as an explicit parameter and create it in the composition root. When DI creates too much parameter-passing overhead, a module-level instance is an acceptable fallback.
 
 ---
 
@@ -10,9 +10,31 @@ Some resources should exist exactly once: configuration, database connection poo
 
 ---
 
-## Pythonic Approach: Module-Level Instance (Preferred)
+## Preferred Approach: Dependency Injection
 
-Python modules are imported once and cached. A module-level instance is the simplest singleton:
+Pass the shared resource as an explicit parameter. Create it once in the composition root (`main()` or the router layer in FastAPI).
+
+```python
+# config.py
+@dataclass
+class Config:
+    db_uri: str = "sqlite:///:memory:"
+    debug: bool = True
+
+# main.py — composition root
+def main() -> None:
+    config = Config()
+    service = create_service(config)
+    service.run()
+```
+
+This keeps dependencies visible, testable, and swappable. No global state, no hidden coupling.
+
+---
+
+## Fallback: Module-Level Instance
+
+When DI creates too much parameter-passing overhead, a module-level instance is simpler than a class-based singleton. Python modules are imported once and cached:
 
 ```python
 # config.py
@@ -30,11 +52,13 @@ if config.debug:
 
 Every import of `config` gets the same module object. No metaclass, no `__new__` override, no ceremony.
 
-**Why this is best:**
+**Advantages over class-based singleton:**
 - Leverages Python's built-in module caching
 - Explicit and readable
-- Easy to test (mock the module or its attributes)
+- Thread-safe by default
 - No surprising behavior
+
+**Still has drawbacks:** This is still global state. Functions that access the module have hidden dependencies that don't appear in their signatures, making them harder to test and reason about. Whenever you reach for this, first check whether you can pass the resource as a parameter instead.
 
 ---
 
@@ -122,30 +146,41 @@ class Config:
 
 | Approach | Use when... |
 |---|---|
-| Module-level instance | Configuration, simple shared state — the default choice |
-| Metaclass singleton | Need class with methods AND exactly one instance |
-| Thread-safe metaclass | Multi-threaded application with metaclass singleton |
-| `__new__` override | Quick one-off, don't need reusable pattern |
+| **Dependency injection** | Always preferred — pass the resource as a parameter, create in composition root |
+| Module-level instance | DI creates excessive parameter-passing overhead; resource is truly global (logging config) |
+| Metaclass singleton | Need a class with methods AND controlled instantiation (rare) |
+| `__new__` override | Quick one-off, don't need reusable pattern (rare) |
 
 ---
 
-## Anti-Pattern Warning
+## Why Class-Based Singletons Are an Anti-Pattern
 
-Singletons are global state in disguise. Overuse creates the same problems as global coupling:
+Singletons are global state in disguise. They create the same problems as global coupling (the 2nd worst coupling type — see `design-principles.md`):
 
-- Hidden dependencies (functions use singleton without declaring it as a parameter)
-- Hard to test (can't easily substitute a different instance)
-- Tight coupling to a specific implementation
+- **Hidden dependencies** — functions use the singleton without declaring it as a parameter
+- **Hard to test** — can't easily substitute a different instance per test
+- **Tight coupling** — every consumer is coupled to a specific implementation
+- **Thread safety issues** — basic implementations have race conditions in multi-threaded code
+- **Breaks inheritance** — subclasses can create additional instances, defeating the purpose
 
-**Prefer dependency injection:** Pass the shared resource as a parameter. Use singleton only for truly global resources (config, logging) that don't need to be swapped in tests.
+Module-level instances avoid the class-based pitfalls but still introduce global state. The hierarchy of preference is:
+
+1. **Best:** Dependency injection — pass resources as parameters
+2. **Acceptable fallback:** Module-level instance when DI is impractical
+3. **Avoid:** Class-based Singleton pattern (metaclass or `__new__`)
 
 ```python
-# Prefer this (explicit dependency)
+# BEST: explicit dependency
 def process_order(order: Order, config: Config) -> None: ...
 
-# Over this (hidden singleton access)
+# ACCEPTABLE: module-level (still global state)
+import config
 def process_order(order: Order) -> None:
-    config = Config()  # hidden dependency
+    if config.debug: ...
+
+# AVOID: class-based singleton (hidden dependency)
+def process_order(order: Order) -> None:
+    config = Config()  # hidden singleton access
 ```
 
 ---
@@ -155,5 +190,6 @@ def process_order(order: Order) -> None:
 | Advantage | Cost |
 |---|---|
 | Guarantees single instance | Global state — hard to test if overused |
-| Lazy initialization (created on first use) | Thread safety requires extra work |
+| Lazy initialization (created on first use) | Thread safety requires extra work (metaclass/`__new__`) |
 | Shared resource management | Hidden dependencies if accessed directly |
+| Module-level avoids class ceremony | Still introduces global coupling |

@@ -97,7 +97,7 @@ def fetch_data(url: str) -> dict:
 
 ### Key design decisions
 
-- **Catch specific exceptions** — pass a tuple of expected failure types; the default `(Exception,)` is intentionally broad as a safety net since retry re-raises after exhaustion, but narrowing to specific exceptions (e.g., `ConnectionError, TimeoutError`) is best practice
+- **Catch specific exceptions** — always pass a tuple of expected transient failure types (e.g., `ConnectionError, TimeoutError`). The default `(Exception,)` exists only as a convenience — in production code, always narrow it. Catching `Exception` masks bugs like `NameError` and `AttributeError` (see `error-handling.md`). The only defense for the broad default is that retry re-raises after exhaustion, but this still hides bugs during the retry window
 - **Exponential backoff** — `delay * (2 ** attempt)` prevents hammering a failing service
 - **Re-raise the last exception** — if all retries fail, the caller sees the original error, not a generic one
 
@@ -246,7 +246,7 @@ Decorators are best for concerns that apply uniformly across many functions. If 
 ### Do
 
 - Always use `@functools.wraps(func)` on the wrapper function
-- Catch specific exceptions in retry decorators — narrowing from the default `(Exception,)` is best practice (see `patterns/retry.md`)
+- Always narrow the `exceptions` parameter in retry decorators — the default `(Exception,)` masks bugs; specify transient error types like `ConnectionError, TimeoutError` (see `patterns/retry.md` and `error-handling.md`)
 - Keep decorators focused on one concern (logging OR retry, not both)
 - Type hint decorator parameters and return types
 - Use parameterized decorators when the decorator needs configuration

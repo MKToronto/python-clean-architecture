@@ -434,7 +434,7 @@ make_sound(Robot())  # "Beep"
 | Python idiom | More Java/C# style | More Pythonic (duck typing) |
 | Best for | Framework extension points where you control the hierarchy | Interfaces between decoupled components |
 
-Prefer `Protocol` for defining interfaces in clean architecture. It keeps components decoupled because the implementing class never imports or references the protocol definition.
+Protocol is a good default for defining interfaces in clean architecture — it keeps components decoupled because the implementing class never imports or references the protocol definition. However, ABCs are not obsolete. Prefer ABC when shared implementation exists in the superclass (e.g., stored state that subclasses use), when you want instantiation-time error checking (`@abstractmethod` prevents incomplete subclasses), or when IDE "implement methods" assistance is valuable. See the full comparison in `design-principles.md`.
 
 ---
 
@@ -623,9 +623,9 @@ def create_invoice(
     return {"subtotal": subtotal, "tax": tax, "total": subtotal + tax}
 ```
 
-### Prefer Structural Typing (Protocols)
+### Default to Structural Typing (Protocols)
 
-Use `Protocol` to define interfaces instead of abstract base classes. This keeps components decoupled and follows Python's duck typing philosophy.
+Protocol is a good default for defining interfaces — it keeps components decoupled and follows Python's duck typing philosophy. Use ABC instead when you need shared implementation in the superclass, instantiation-time error checking, or IDE assistance for implementing abstract methods.
 
 ```python
 from typing import Protocol

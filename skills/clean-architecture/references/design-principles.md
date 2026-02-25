@@ -312,7 +312,30 @@ def read_payment_processor() -> PaymentProcessor:
 
 ### The "Single Dirty Place"
 
-A well-designed system has exactly one place where all concrete wiring happens — the composition root. In FastAPI, the router serves as the composition root.
+A well-designed system has one conceptual place where all concrete wiring happens — the composition root. In a standalone script, this is the `main()` function. In FastAPI, the **router layer** serves as the composition root — the topmost layer where concrete database implementations are chosen and injected into operations.
+
+For production FastAPI apps, use `Depends()` to centralize dependency creation instead of repeating it in every endpoint:
+
+```python
+from fastapi import Depends
+from sqlalchemy.orm import Session
+
+def get_db() -> Generator[Session, None, None]:
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+def get_room_interface(session: Session = Depends(get_db)) -> DBInterface:
+    return DBInterface(session, DBRoom)
+
+@router.get("/", response_model=list[Room])
+def read_all_rooms(data_interface: DBInterface = Depends(get_room_interface)):
+    return room_ops.read_all_rooms(data_interface)
+```
+
+This keeps the wiring in one place (the dependency provider functions) and makes testing easier via dependency overrides.
 
 ### Open-Closed Principle
 
