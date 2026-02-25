@@ -171,7 +171,7 @@ src/
         invoice_repo.py
 ```
 
-Top-level folders represent architectural layers. This is the approach used in the skill's scaffolding template and the paid course. It makes the architecture immediately visible.
+Top-level folders represent architectural layers. The course uses this approach (with `operations/` and `db/` as layer names — see `layered-architecture.md`). It makes the architecture immediately visible.
 
 **Trade-off:** A developer working on "contracts" must jump between three folders.
 

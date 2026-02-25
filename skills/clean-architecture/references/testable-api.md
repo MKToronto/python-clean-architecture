@@ -150,7 +150,7 @@ class AlwaysEmptyStub(DataInterfaceStub):
 
 ### Custom Domain Exceptions
 
-Define domain-specific exceptions as dataclasses:
+Define domain-specific exception classes:
 
 ```python
 class NotFoundError(Exception):

@@ -155,7 +155,7 @@ class Config:
 
 ## Why Class-Based Singletons Are an Anti-Pattern
 
-Singletons are global state in disguise. They create the same problems as global coupling (the 2nd worst coupling type — see `design-principles.md`):
+Singletons are global state in disguise. They create the same problems as global coupling (the 2nd worst coupling type — see `references/design-principles.md`):
 
 - **Hidden dependencies** — functions use the singleton without declaring it as a parameter
 - **Hard to test** — can't easily substitute a different instance per test

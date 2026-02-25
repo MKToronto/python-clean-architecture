@@ -530,20 +530,14 @@ def fetch_price(symbol: str) -> float:
 
 **Recognize:** Application startup is slow because it loads all data/models/resources upfront, even if many are never used.
 
-**Pythonic implementation:** `functools.cache` for computed-once values, `cached_property` for class attributes, generators for streaming:
+**Pythonic implementation:** `functools.cache` for computed-once values, TTL cache for time-limited data, generators for streaming:
 
 ```python
-from functools import cache, cached_property
+from functools import cache
 
 @cache
 def load_model(name: str) -> Model:
     return Model.from_pretrained(name)  # loaded once, cached forever
-
-class DataPipeline:
-    @cached_property
-    def config(self) -> dict:
-        with open(self.config_path) as f:
-            return json.load(f)  # loaded on first access
 ```
 
 → Full reference: `patterns/lazy-loading.md`

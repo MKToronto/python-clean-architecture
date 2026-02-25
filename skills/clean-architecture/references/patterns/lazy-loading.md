@@ -28,33 +28,6 @@ model = load_model("bert-base")
 
 ---
 
-## `functools.cached_property` for Class Attributes
-
-Computes an attribute on first access and caches it on the instance:
-
-```python
-from functools import cached_property
-
-class DataPipeline:
-    def __init__(self, config_path: str) -> None:
-        self.config_path = config_path
-
-    @cached_property
-    def config(self) -> dict:
-        """Loaded only when first accessed."""
-        with open(self.config_path) as f:
-            return json.load(f)
-
-    @cached_property
-    def model(self) -> Model:
-        """Loaded only when first accessed."""
-        return Model.from_pretrained(self.config["model_name"])
-```
-
-**Note:** `@cached_property` requires the class to be mutable (not frozen). It works by storing the result as an instance attribute that shadows the descriptor.
-
----
-
 ## TTL Cache (Time-To-Live)
 
 Cache results for a limited time — useful for data that changes periodically:
@@ -115,31 +88,6 @@ for batch in read_large_file("events.jsonl"):
 ```
 
 **Key insight:** Generators are Python's built-in lazy loading mechanism. Use `yield` to defer work until the consumer requests the next value.
-
----
-
-## `__getattr__` for Deferred Attribute Initialization
-
-Load attributes on first access using Python's attribute lookup protocol:
-
-```python
-class LazyConfig:
-    def __init__(self, config_path: str) -> None:
-        self._config_path = config_path
-        self._loaded: dict[str, Any] = {}
-
-    def __getattr__(self, name: str) -> Any:
-        if name.startswith("_"):
-            raise AttributeError(name)
-        if name not in self._loaded:
-            # Load from config file on first access
-            with open(self._config_path) as f:
-                data = json.load(f)
-            self._loaded = data
-        return self._loaded[name]
-```
-
-**How it works:** `__getattr__` is only called when normal attribute lookup fails. Once you set the attribute on the instance (via `self.__dict__`), `__getattr__` is never called again for that name.
 
 ---
 

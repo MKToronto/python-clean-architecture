@@ -286,8 +286,8 @@ Linting tools like pylint and ruff flag bare `except:` clauses for exactly this 
 
 ### Do
 
-- Create custom exception classes for each domain error condition
-- Use `@dataclass` exceptions that carry relevant context (IDs, names)
+- Create custom exception classes for each domain error condition (simple subclasses of `Exception`)
+- Raise them with descriptive string messages: `raise NotFoundError(f"Blog not found: {blog_id}")`
 - Catch the most specific exception type possible
 - Use multiple `except` clauses for different error types
 - Use context managers for all resource lifecycle management (database connections, file handles, network sockets)

@@ -109,7 +109,7 @@ When encountering these code smells, apply the corresponding pattern:
 | Incompatible interface from external library | Adapter | Protocol interface + `functools.partial` for single-method adaptation |
 | Client coupled to complex subsystem details | Facade | Simplified interface class, `functools.partial` to bind dependencies |
 | Transient failures in external API/DB calls | Retry | `@retry` decorator with exponential backoff, fallback strategies |
-| Slow startup loading unused resources | Lazy Loading | `functools.cache`, `cached_property`, generators, `__getattr__` |
+| Slow startup loading unused resources | Lazy Loading | `functools.cache`, TTL cache, generators, background preloading |
 | Need extensibility without modifying core code | Plugin Architecture | Config-driven creation, `importlib` auto-discovery, self-registering modules |
 
 ### Default preferences for all patterns:
@@ -216,7 +216,7 @@ For detailed guidance beyond this overview, consult:
 - **`references/patterns/pipeline.md`** — Chain of Responsibility, functools.reduce composition, pandas .pipe()
 - **`references/patterns/functional.md`** — Callback, Function Wrapper, Function Builder patterns
 - **`references/patterns/retry.md`** — Exponential backoff, `@retry` decorator, fallback strategies, tenacity library
-- **`references/patterns/lazy-loading.md`** — `functools.cache`, `cached_property`, generators, TTL cache, background preloading
+- **`references/patterns/lazy-loading.md`** — `functools.cache`, TTL cache, generators, background preloading
 - **`references/patterns/plugin-architecture.md`** — Config-driven plugins, `importlib` auto-discovery, self-registering modules, Protocol conformance
 
 **Architectural & Domain Patterns:**
@@ -235,4 +235,4 @@ For detailed guidance beyond this overview, consult:
 
 ### Example Files
 
-- **`examples/fastapi-hotel-api/`** — Complete working FastAPI project demonstrating all patterns: rooms, customers, bookings with computed prices
+- **`examples/fastapi-hotel-api/`** — Complete working FastAPI project demonstrating all patterns: rooms and bookings with computed prices

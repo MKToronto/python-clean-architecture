@@ -10,7 +10,7 @@
 
 The plugin architecture combines three patterns:
 
-1. **Registry** (`patterns/registry.md`) — dict mapping strings to factory callables
+1. **Registry** (`registry.md`) — dict mapping strings to factory callables
 2. **Protocol** — structural typing for plugin conformance
 3. **Dynamic import** — `importlib.import_module` for runtime loading
 

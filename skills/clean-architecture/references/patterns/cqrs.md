@@ -240,7 +240,7 @@ async def get_ticket(ticket_id: str) -> TicketDetails:
 
 - **Event Sourcing** (event-sourcing.md) — Natural companion. Events are the write model; projections are the read model.
 - **Pub/Sub** (notification.md) — Projectors can be event subscribers, updating read models asynchronously.
-- **Three-layer architecture** (`../layered-architecture.md`) — CQRS extends it. Commands go through operations layer; queries go through a separate read path.
+- **Three-layer architecture** (`references/layered-architecture.md`) — CQRS extends it. Commands go through operations layer; queries go through a separate read path.
 
 ---
 

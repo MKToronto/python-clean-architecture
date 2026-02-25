@@ -50,7 +50,7 @@ def multiply(x: int, y: int) -> int:
     return x * y
 
 
-operations: dict[str, callable] = {
+operations: dict[str, Callable[..., int]] = {
     "add": add,
     "multiply": multiply,
 }

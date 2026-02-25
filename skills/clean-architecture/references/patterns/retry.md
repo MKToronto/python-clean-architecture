@@ -116,7 +116,7 @@ def fetch_price(symbol: str) -> float:
     return response.json()["price"]
 ```
 
-The `exceptions` parameter is critical — only retry on transient errors, not on `ValueError` or `AuthenticationError` which will always fail. Always narrow the default `(Exception,)` to specific transient types. Catching `Exception` masks bugs like `NameError` and `AttributeError` during the retry window, even though the decorator re-raises after exhaustion (see `error-handling.md`). The broad default is a convenience for prototyping, not a production pattern.
+The `exceptions` parameter is critical — only retry on transient errors, not on `ValueError` or `AuthenticationError` which will always fail. Always narrow the default `(Exception,)` to specific transient types. Catching `Exception` masks bugs like `NameError` and `AttributeError` during the retry window, even though the decorator re-raises after exhaustion (see `references/error-handling.md`). The broad default is a convenience for prototyping, not a production pattern.
 
 ---
 
@@ -209,6 +209,6 @@ Tenacity handles edge cases (logging, callbacks, async support) that hand-rolled
 
 ## Relationship to Other Patterns
 
-- **Decorator** (`../decorators.md`) — the `@retry` decorator uses `functools.wraps` and parameterized decorator pattern
-- **Error Handling** (`../error-handling.md`) — retry is a complement to exception handling, not a replacement; catch specific exceptions
+- **Decorator** (`references/decorators.md`) — the `@retry` decorator uses `functools.wraps` and parameterized decorator pattern
+- **Error Handling** (`references/error-handling.md`) — retry is a complement to exception handling, not a replacement; catch specific exceptions
 - **Strategy** (`strategy.md`) — fallback alternatives use the same pattern of passing functions as arguments
