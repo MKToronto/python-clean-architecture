@@ -33,6 +33,25 @@ class PaymentProcessor:
     def pay_credit(self, order, security_code): ...
 ```
 
+**Separate I/O from Domain Models:** Replace `print()`-based methods with `__str__()` methods that return strings. Move all `input()` calls to the controller/game/router layer. This makes model classes reusable across different UIs.
+
+```python
+# BEFORE: model does I/O
+class Hand:
+    def show_hand(self): print(f"Hand: {self.dice}")
+    def re_roll(self):
+        choice = input("Which dice to re-roll? ")  # I/O in model
+
+# AFTER: model returns data, controller does I/O
+class Hand:
+    def __str__(self) -> str: return f"Hand: {self.dice}"
+
+class Game:
+    def play_turn(self):
+        print(self.hand)  # controller does I/O
+        choice = input("Which dice to re-roll? ")
+```
+
 **Extract Function:** When a function does multiple things, pull each concern into its own function.
 
 ```python
@@ -251,6 +270,19 @@ Do not start from design patterns and try to apply them. Start from identifying 
 
 Inheritance is the strongest coupling that exists. Use composition instead.
 
+**Configuration vs Subclasses:** Use subclasses when behavior changes (different methods, different algorithms). Use configuration (constructor arguments or a config file) when only values change (different health, speed, damage). A subclass that only overrides `__init__` to set different values is a configuration problem, not an inheritance problem.
+
+```python
+# BAD: subclass only changes values, not behavior
+class Monster1(Monster):
+    def __init__(self):
+        super().__init__(health=100, speed=2)
+
+# GOOD: single class, different configurations
+monster1 = Monster(health=100, speed=2, color="red")
+monster2 = Monster(health=200, speed=1, color="blue")
+```
+
 ### The Composition Pattern
 
 1. **Identify duplicated behavior** across classes (e.g., commission logic in multiple employee types)
@@ -328,7 +360,9 @@ factories: dict[str, ExporterFactory] = {
 factory = factories[export_quality]
 ```
 
-### Creator Functions (Pythonic Factory)
+### Static Factory Method `from_X` Pattern
+
+When creating objects from external representations (serialization formats, config
 
 When different types need different creation logic:
 
@@ -433,6 +467,8 @@ Extract shared logic into reusable functions. But apply **AHA (Avoid Hasty Abstr
 ### KISS — Keep It Stupidly Simple
 
 Use the simplest design that meets current requirements. If two class attributes solve the problem, do not build a strategy pattern with polymorphic classes.
+
+**The Boilerplate-to-Logic Ratio:** If a project has more boilerplate (abstract base classes, argument classes, factory classes, controller wrappers) than actual logic that does something, the design is over-engineered. If abstracting "for the future" introduces more code than the current concrete implementation, defer the abstraction. When you actually need the GUI/web/mobile version, refactoring a clean, simple codebase is easier than navigating an over-abstracted one.
 
 ### YAGNI — You Ain't Gonna Need It
 

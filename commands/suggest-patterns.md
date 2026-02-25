@@ -4,7 +4,7 @@ description: Scan code and recommend Pythonic design patterns
 argument-hint: [path]
 ---
 
-Scan the code at `$ARGUMENTS` (or the current working directory if no path given) and recommend which of the 23 Pythonic design patterns would improve it.
+Scan the code at `$ARGUMENTS` (or the current working directory if no path given) and recommend which of the 25 Pythonic design patterns would improve it.
 
 ## Process
 
@@ -36,6 +36,8 @@ Scan the code at `$ARGUMENTS` (or the current working directory if no path given
    | Client coupled to complex subsystem details | **Facade** | Simplified interface class, `functools.partial` to bind dependencies |
    | Transient failures in external API/DB calls | **Retry** | `@retry` decorator with exponential backoff, fallback strategies |
    | Slow startup loading unused resources | **Lazy Loading** | `functools.cache`, `cached_property`, generators, `__getattr__` |
+   | Data access logic mixed into domain classes | **Repository** | Protocol interface for CRUD, concrete implementations per backend |
+   | Sequential operations on an object are verbose | **Fluent Interface** | Methods return `self` for chaining, domain-specific verbs |
    | Need extensibility without modifying core code | **Plugin Architecture** | Config-driven creation, `importlib` auto-discovery, self-registering modules |
 
 3. **Report suggestions** — For each match, show:

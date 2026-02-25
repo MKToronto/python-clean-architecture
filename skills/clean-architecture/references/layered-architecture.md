@@ -175,11 +175,9 @@ Base = declarative_base()
 Pure business logic functions. Accept `DataInterface` as a parameter.
 
 ```python
-from models.room import DataInterface, RoomCreate, Room
-from typing import Any
+from models.room import RoomCreate, Room
+from operations.interface import DataInterface
 import uuid
-
-DataObject = dict[str, Any]
 
 def read_all_rooms(data_interface: DataInterface) -> list[Room]:
     rooms = data_interface.read_all()

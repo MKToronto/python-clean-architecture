@@ -112,7 +112,7 @@ python-clean-architecture/
 ├── commands/
 │   ├── review-architecture.md              Full architecture review
 │   ├── review-api-design.md                Review REST API conventions
-│   ├── check-quality.md                    Quick 17-rule quality check
+│   ├── check-quality.md                    Quick 22-rule quality check
 │   ├── suggest-patterns.md                 Recommend Pythonic patterns
 │   ├── decouple.md                         Find coupling, suggest DI
 │   ├── make-pythonic.md                    Refactor to Pythonic patterns

@@ -110,6 +110,8 @@ When encountering these code smells, apply the corresponding pattern:
 | Client coupled to complex subsystem details | Facade | Simplified interface class, `functools.partial` to bind dependencies |
 | Transient failures in external API/DB calls | Retry | `@retry` decorator with exponential backoff, fallback strategies |
 | Slow startup loading unused resources | Lazy Loading | `functools.cache`, TTL cache, generators, background preloading |
+| Data access logic mixed into domain classes | Repository | Protocol interface for CRUD, concrete implementations per backend |
+| Sequential operations on an object are verbose and error-prone | Fluent Interface | Methods return `self` for chaining, domain-specific verbs |
 | Need extensibility without modifying core code | Plugin Architecture | Config-driven creation, `importlib` auto-discovery, self-registering modules |
 
 ### Default preferences for all patterns:

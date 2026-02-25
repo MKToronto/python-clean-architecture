@@ -130,11 +130,11 @@ class EmailAddress:
 
 ### 10. No Dead Code
 
-Remove unused functions, variables, imports, and commented-out code. Version control preserves history.
+Remove unused functions, variables, imports, and commented-out code. Version control preserves history. This includes dead imports (`import os` when os is never used), explicit `return None` at the end of void functions (Python does this implicitly), and `class Foo(object):` in Python 3 (just use `class Foo:`).
 
 ### 11. No Magic Numbers
 
-Use named constants or configurable attributes instead of literal values.
+Use named constants or configurable attributes instead of literal values. This includes semantic constants for data representations, not just numeric parameters.
 
 ```python
 # BAD
@@ -145,6 +145,16 @@ if km > 100:
 KM_FREE_LIMIT = 100
 if km > KM_FREE_LIMIT:
     paid_km = km - KM_FREE_LIMIT
+
+# Also extract semantic constants (not just numbers)
+# BAD
+self.grid[row][col] = "O"
+
+# GOOD
+HIDDEN = "O"
+SHIP = "S"
+GUESS = "X"
+self.grid[row][col] = HIDDEN
 ```
 
 ### 12. No Broad Exception Catching

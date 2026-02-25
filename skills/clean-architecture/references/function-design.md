@@ -622,6 +622,7 @@ Pattern files show progressions from class-based to functional implementations. 
 **Convert to a plain function when:**
 - The class has a single method and no instance state
 - The class has no meaningful data — it's just wrapping a function
+- The class has only `@staticmethod` methods (no `self` at all — the class is just a namespace)
 - You don't need multiple instances with different configurations
 
 **Keep as a callable class (`__call__` + dataclass) when:**
