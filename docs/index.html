@@ -106,318 +106,363 @@
     </ul>
 
     <h2>Example: /review-architecture</h2>
-    <p>Output from reviewing a test <code>bookstore-api/</code> project:</p>
+    <p>Output from reviewing a test bookstore-api project:</p>
 
     <div class="terminal">
 <span class="prompt">$ /review-architecture bookstore-api/</span>
 
+<span class="heading">Architecture Review: python-clean-architecture/testing/</span>
+
 <span class="heading">Architecture Summary</span>
-<span class="dim">──────────────────────</span>
 
 Layers
 <span class="dim">──────</span>
 API:        <span class="file">routers/books.py</span>, <span class="file">routers/orders.py</span>
 Logic:      <span class="file">services/book_service.py</span>, <span class="file">services/order_service.py</span>
-Database:   <span class="file">db/database.py</span> <span class="dim">(models + session factory)</span>
-Models:     <span class="file">models/book.py</span>, <span class="file">models/order.py</span> <span class="dim">(Pydantic)</span>
-Unclear:    <span class="file">utils/helpers.py</span> <span class="dim">(formatting + DB queries — mixed concerns)</span>
+Database:   <span class="file">db/database.py</span>
+Models:     <span class="file">models/book.py</span>, <span class="file">models/order.py</span>
+Unclear:    <span class="file">utils/helpers.py</span> <span class="dim">(mixed — formatting, validation, AND direct DB access)</span>
 
 Dependency Flows
 <span class="dim">────────────────</span>
-<span class="file">routers/books.py</span> → <span class="file">services/book_service.py</span> → <span class="file">db/database.py</span>       <span class="ok">✓</span> <span class="dim">(no abstraction)</span>
-<span class="file">routers/orders.py</span> → <span class="file">services/order_service.py</span> → <span class="file">db/database.py</span>     <span class="ok">✓</span> <span class="dim">(no abstraction)</span>
-<span class="file">routers/orders.py</span> → <span class="file">db/database.py</span>                                   <span class="warn">⚠ layer skip</span>
-<span class="file">utils/helpers.py</span> → <span class="file">db/database.py</span>                                    <span class="warn">⚠ mixed concerns</span>
+<span class="file">routers/books.py</span> → <span class="file">services/book_service.py</span> → <span class="file">db/database.py</span>      <span class="ok">✓</span>
+<span class="file">routers/orders.py</span> → <span class="file">services/order_service.py</span> → <span class="file">db/database.py</span>    <span class="ok">✓</span>
+<span class="file">routers/orders.py</span> → <span class="file">db/database.py</span>                                 <span class="warn">⚠ layer skip</span>
+<span class="file">utils/helpers.py</span> → <span class="file">db/database.py</span>                                  <span class="warn">⚠ unclear layer</span>
 
 Layer Violations
 <span class="dim">────────────────</span>
-<span class="warn">⚠</span> <span class="file">routers/orders.py:2</span> imports SessionLocal + OrderModel directly
-<span class="warn">⚠</span> <span class="file">routers/orders.py:21</span> performs raw DB query inside an endpoint
-<span class="warn">⚠</span> <span class="file">utils/helpers.py:1</span> imports DB layer — utility module should not touch persistence
-<span class="warn">⚠</span> No <span class="fn">DataInterface</span> Protocol exists — all services hardcode <span class="fn">SessionLocal</span>()
+<span class="warn">⚠</span> <span class="file">routers/orders.py:2,21-32</span> — imports and queries DB directly, bypassing service
+<span class="warn">⚠</span> <span class="file">utils/helpers.py:1,16,31</span> — utility module directly accesses database layer
 
+Missing Abstraction Layer
+<span class="dim">─────────────────────────</span>
+No <span class="fn">DataInterface</span> Protocol exists. Both services import concrete <span class="fn">SessionLocal</span> and
+ORM models directly. Operations cannot be tested without a real database.
+
+<span class="dim">───</span>
 <span class="heading">What Works Well</span>
-<span class="dim">──────────────────</span>
-<span class="ok">✓</span> Good Pydantic model separation — <span class="fn">BookCreate</span> / <span class="fn">Book</span> and <span class="fn">OrderCreate</span> / <span class="fn">Order</span>
-  properly separate input from output (<span class="file">models/book.py</span>, <span class="file">models/order.py</span>)
-<span class="ok">✓</span> Clean <span class="file">main.py</span> — simple composition with tagged routers, no business logic
-<span class="ok">✓</span> Consistent router structure — proper <span class="fn">APIRouter</span>() with prefix/tag organization
-<span class="ok">✓</span> Book service functions are individually small — each under 10 lines
 
+<span class="ok">✓</span> Create/Read model separation — <span class="file">models/book.py</span> correctly separates <span class="fn">BookCreate</span>
+  (input) from <span class="fn">Book</span> (output with id). Same pattern in <span class="file">models/order.py</span>.
+<span class="ok">✓</span> Router prefixing in <span class="file">main.py</span> — Clean FastAPI setup with <span class="str">/books</span> and <span class="str">/orders</span>
+  prefixes and tags.
+<span class="ok">✓</span> <span class="fn">get_db</span>() generator exists in <span class="file">db/database.py:31-36</span> — A proper session dependency
+  is defined, even though nothing currently uses it.
+<span class="ok">✓</span> Service layer exists — The project has the right instinct to separate routers
+  from business logic. The three-layer structure is present in skeleton form.
+
+<span class="dim">───</span>
 <span class="heading">Findings by Severity</span>
-<span class="dim">──────────────────────</span>
 
 <span class="err">Critical</span>
 
-<span class="err">1. Layer skip — router queries DB directly</span>
-   <span class="file">routers/orders.py:2,19-32</span>
+<span class="err">1. OrderService is a God Class — 7+ responsibilities in one class</span>
+   File: <span class="file">services/order_service.py:6-177</span>
+   Principles: <span class="principle">P1 High Cohesion</span>, <span class="principle">P7 Keep Things Simple</span>
+   Pattern: <span class="pattern">Extract Class</span> — split into focused collaborators
+
+   The docstring says it all: <span class="str">"Handles orders, payments, inventory, notifications,
+   discounts, and shipping."</span> This class does order CRUD, discount calculation, email
+   notifications, inventory management, logging, refund processing, and shipping
+   calculation.
+
+   Fix: Extract each responsibility into its own module:
+
+   <span class="comment"># services/discount.py</span>
+   <span class="kw">from</span> typing <span class="kw">import</span> Callable
+
+   DiscountFunction = <span class="fn">Callable</span>[[<span class="fn">float</span>, <span class="fn">int</span>], <span class="fn">float</span>]
+
+   DISCOUNT_RULES: <span class="fn">dict</span>[<span class="fn">str</span>, <span class="fn">float</span>] = {
+       <span class="str">"bulk"</span>: <span class="str">0.8</span>,
+       <span class="str">"medium"</span>: <span class="str">0.9</span>,
+   }
+
+   QUANTITY_THRESHOLDS: <span class="fn">list</span>[<span class="fn">tuple</span>[<span class="fn">int</span>, <span class="fn">str</span>]] = [
+       (<span class="str">10</span>, <span class="str">"bulk"</span>),
+       (<span class="str">5</span>, <span class="str">"medium"</span>),
+   ]
+
+   <span class="kw">def</span> <span class="fn">apply_quantity_discount</span>(total: <span class="fn">float</span>, quantity: <span class="fn">int</span>) -> <span class="fn">float</span>:
+       <span class="kw">for</span> threshold, tier <span class="kw">in</span> QUANTITY_THRESHOLDS:
+           <span class="kw">if</span> quantity >= threshold:
+               <span class="kw">return</span> total * DISCOUNT_RULES[tier]
+       <span class="kw">return</span> total
+
+   <span class="comment"># services/order_service.py — reduced to order CRUD only</span>
+   <span class="kw">from</span> typing <span class="kw">import</span> Protocol
+
+   <span class="kw">class</span> <span class="fn">OrderDataInterface</span>(<span class="fn">Protocol</span>):
+       <span class="kw">def</span> <span class="fn">create</span>(self, book_id: <span class="fn">int</span>, quantity: <span class="fn">int</span>,
+                  customer_email: <span class="fn">str</span>, total: <span class="fn">float</span>) -> <span class="fn">dict</span>: ...
+       <span class="kw">def</span> <span class="fn">get</span>(self, order_id: <span class="fn">int</span>) -> <span class="fn">dict</span> | <span class="fn">None</span>: ...
+       <span class="kw">def</span> <span class="fn">update_status</span>(self, order_id: <span class="fn">int</span>, status: <span class="fn">str</span>) -> <span class="fn">dict</span> | <span class="fn">None</span>: ...
+
+   <span class="kw">def</span> <span class="fn">create_order</span>(
+       data_interface: <span class="fn">OrderDataInterface</span>,
+       book_id: <span class="fn">int</span>,
+       quantity: <span class="fn">int</span>,
+       customer_email: <span class="fn">str</span>,
+       compute_discount: DiscountFunction = apply_quantity_discount,
+   ) -> <span class="fn">dict</span>:
+       book = data_interface.get_book(book_id)
+       <span class="kw">if not</span> book:
+           <span class="kw">raise</span> <span class="fn">BookNotFoundError</span>(f<span class="str">"Book {book_id} not found"</span>)
+       total = compute_discount(book[<span class="str">"price"</span>] * quantity, quantity)
+       <span class="kw">return</span> data_interface.create(book_id, quantity, customer_email, total)
+
+<span class="dim">───</span>
+<span class="err">2. No DataInterface Protocol — services tightly coupled to concrete DB</span>
+   File: <span class="file">services/book_service.py:1</span>, <span class="file">services/order_service.py:3</span>
    Principles: <span class="principle">P3 Depend on Abstractions</span>, <span class="principle">P2 Low Coupling</span>
+   Pattern: <span class="pattern">Repository pattern</span> — Protocol-based DataInterface
 
-   The <span class="fn">read_order</span> endpoint imports <span class="fn">SessionLocal</span> and <span class="fn">OrderModel</span>, then runs
-   raw SQLAlchemy queries inside the router. Bypasses the service layer.
+   Every service function directly imports <span class="fn">SessionLocal</span> and ORM models. This makes
+   unit testing impossible without a real database and prevents swapping storage
+   backends.
 
-   <span class="comment"># Before (routers/orders.py:19-32)</span>
-   <span class="kw">from</span> db.database <span class="kw">import</span> SessionLocal, OrderModel
+   Fix:
+
+   <span class="comment"># db/data_interface.py</span>
+   <span class="kw">from</span> typing <span class="kw">import</span> Protocol
+
+   <span class="kw">class</span> <span class="fn">BookDataInterface</span>(<span class="fn">Protocol</span>):
+       <span class="kw">def</span> <span class="fn">create</span>(self, title: <span class="fn">str</span>, author: <span class="fn">str</span>, isbn: <span class="fn">str</span>, price: <span class="fn">float</span>) -> <span class="fn">dict</span>: ...
+       <span class="kw">def</span> <span class="fn">get_all</span>(self) -> <span class="fn">list</span>[<span class="fn">dict</span>]: ...
+       <span class="kw">def</span> <span class="fn">get_by_id</span>(self, book_id: <span class="fn">int</span>) -> <span class="fn">dict</span> | <span class="fn">None</span>: ...
+       <span class="kw">def</span> <span class="fn">search_by_title</span>(self, query: <span class="fn">str</span>) -> <span class="fn">list</span>[<span class="fn">dict</span>]: ...
+
+   <span class="comment"># services/book_service.py — accepts Protocol, not concrete DB</span>
+   <span class="kw">def</span> <span class="fn">create_book</span>(data_interface: <span class="fn">BookDataInterface</span>, data: <span class="fn">BookCreate</span>) -> <span class="fn">Book</span>:
+       <span class="kw">return</span> data_interface.create(**data.model_dump())
+
+   <span class="kw">def</span> <span class="fn">get_all_books</span>(data_interface: <span class="fn">BookDataInterface</span>) -> <span class="fn">list</span>[<span class="fn">dict</span>]:
+       <span class="kw">return</span> data_interface.get_all()
+
+   <span class="comment"># routers/books.py — composition root wires concrete implementation</span>
+   <span class="kw">from</span> db.database <span class="kw">import</span> DBBookInterface
+
+   <span class="kw">@</span>router.post(<span class="str">"/"</span>)
+   <span class="kw">def</span> <span class="fn">add_book</span>(data: <span class="fn">BookCreate</span>, db: Session = Depends(get_db)):
+       data_interface = <span class="fn">DBBookInterface</span>(db)
+       <span class="kw">return</span> create_book(data_interface, data)
+
+<span class="dim">───</span>
+<span class="err">3. Router bypasses service layer — direct DB access</span>
+   File: <span class="file">routers/orders.py:2,21-32</span>
+   Principles: <span class="principle">P2 Low Coupling</span>, <span class="principle">P1 High Cohesion</span>
+
+   The <span class="fn">read_order</span> endpoint directly imports <span class="fn">SessionLocal</span> and <span class="fn">OrderModel</span> and queries
+   the database, even though <span class="fn">OrderService.get_order</span>() already does this.
+
+   Fix: Remove the DB imports and use the service:
 
    <span class="kw">@</span>router.get(<span class="str">"/{order_id}"</span>)
    <span class="kw">def</span> <span class="fn">read_order</span>(order_id: <span class="fn">int</span>):
-       db = SessionLocal()
-       order = db.query(OrderModel).filter(OrderModel.id == order_id).first()
-       db.close()
-       ...
-
-   <span class="comment"># After — delegate to service, raise proper HTTP errors</span>
-   <span class="kw">from</span> fastapi <span class="kw">import</span> HTTPException
-
-   <span class="kw">@</span>router.get(<span class="str">"/{order_id}"</span>, response_model=Order)
-   <span class="kw">def</span> <span class="fn">read_order</span>(order_id: <span class="fn">int</span>):
-       order = order_service.get_order(order_id)
-       <span class="kw">if not</span> order:
+       result = order_service.get_order(order_id)
+       <span class="kw">if not</span> result:
            <span class="kw">raise</span> HTTPException(status_code=<span class="str">404</span>, detail=<span class="str">"Order not found"</span>)
-       <span class="kw">return</span> order
+       <span class="kw">return</span> result
 
-<span class="err">2. No dependency injection — all services hardcode DB access</span>
-   <span class="file">services/book_service.py:1</span>, <span class="file">services/order_service.py:3</span>
-   Principle: <span class="principle">P3 Depend on Abstractions</span>
+<span class="dim">───</span>
+<span class="err">4. Broad exception catching silently swallows errors</span>
+   File: <span class="file">services/order_service.py:154-164</span>
+   Principles: <span class="principle">P7 Keep Things Simple</span>
+   Pattern: <span class="pattern">Custom exceptions</span> — catch specific types only
 
-   Every function creates <span class="fn">SessionLocal</span>() internally. No <span class="fn">DataInterface</span>
-   Protocol exists. Testing requires a real database.
+   <span class="comment"># CURRENT: swallows everything including NameError, AttributeError</span>
+   <span class="kw">except</span> <span class="fn">Exception</span>:
+       <span class="kw">pass</span>
 
-   <span class="comment"># Before (services/book_service.py:1,5-6)</span>
-   <span class="kw">from</span> db.database <span class="kw">import</span> SessionLocal, BookModel
+   This hides real bugs. If smtplib raises a <span class="fn">ConnectionRefusedError</span>, you'd never
+   know emails aren't being sent.
 
-   <span class="kw">def</span> <span class="fn">create_book</span>(data: <span class="fn">BookCreate</span>) -> <span class="fn">Book</span>:
-       db = SessionLocal()
-       book = BookModel(**data.dict())
-       ...
+   Fix:
 
-   <span class="comment"># After — define a Protocol, inject it</span>
-   <span class="kw">class</span> <span class="fn">BookDataInterface</span>(<span class="fn">Protocol</span>):
-       <span class="kw">def</span> <span class="fn">create</span>(self, data: <span class="fn">dict</span>) -> <span class="fn">dict</span>: ...
-       <span class="kw">def</span> <span class="fn">get_all</span>(self) -> <span class="fn">list</span>[<span class="fn">dict</span>]: ...
-       <span class="kw">def</span> <span class="fn">get_by_id</span>(self, book_id: <span class="fn">int</span>) -> <span class="fn">dict</span> | <span class="fn">None</span>: ...
-
-   <span class="kw">def</span> <span class="fn">create_book</span>(data: <span class="fn">BookCreate</span>, data_interface: <span class="fn">BookDataInterface</span>) -> <span class="fn">Book</span>:
-       result = data_interface.create(data.model_dump())
-       <span class="kw">return</span> Book(**result)
-
-<span class="err">3. No resource management — leaked DB connections on exceptions</span>
-   <span class="file">services/book_service.py:6-11</span>, <span class="file">services/order_service.py</span> <span class="dim">(every method)</span>
-   Principle: <span class="principle">P7 Keep Things Simple</span> | Rule: <span class="principle">#13 Use Context Managers</span>
-
-   Every function does <span class="fn">db</span> = <span class="fn">SessionLocal</span>() ... <span class="fn">db</span>.close(). If any line
-   between them raises, the connection leaks. <span class="fn">OrderService</span> methods have
-   multiple early return paths each needing their own <span class="fn">db</span>.close().
-
-   <span class="comment"># Before (services/order_service.py:10-14)</span>
-   db = SessionLocal()
-   book = db.query(BookModel).filter(BookModel.id == book_id).first()
-   <span class="kw">if not</span> book:
-       db.close()
-       <span class="kw">return</span> <span class="fn">None</span>
-
-   <span class="comment"># After — context manager guarantees cleanup</span>
-   <span class="kw">@</span>contextmanager
-   <span class="kw">def</span> <span class="fn">get_session</span>():
-       session = SessionLocal()
-       <span class="kw">try</span>:
-           <span class="kw">yield</span> session
-       <span class="kw">finally</span>:
-           session.close()
-
-   <span class="kw">def</span> <span class="fn">get_order</span>(self, order_id: <span class="fn">int</span>) -> <span class="fn">Order</span> | <span class="fn">None</span>:
-       <span class="kw">with</span> get_session() <span class="kw">as</span> db:
-           order = db.query(OrderModel).filter(OrderModel.id == order_id).first()
-           <span class="kw">return</span> Order(**order.__dict__) <span class="kw">if</span> order <span class="kw">else</span> <span class="fn">None</span>
-
-<span class="warn">Important</span>
-
-<span class="warn">4. God class — OrderService has 7 responsibilities</span>
-   <span class="file">services/order_service.py:6</span> — 177 lines
-   Principle: <span class="principle">P1 High Cohesion</span>
-
-   Handles: order CRUD, discount calculation, email notifications,
-   inventory management, logging, refund processing, and shipping
-   calculation. The docstring says it: <span class="str">"Handles orders, payments,
-   inventory, notifications, discounts, and shipping."</span>
-
-   Fix: Extract into focused collaborators —
-   <span class="fn">DiscountCalculator</span>, <span class="fn">NotificationService</span>, <span class="fn">ShippingCalculator</span>,
-   <span class="fn">RefundProcessor</span>. Keep <span class="fn">OrderOperations</span> for pure CRUD only.
-
-<span class="warn">5. Broad exception catching — except Exception: pass</span>
-   <span class="file">services/order_service.py:163-164</span>
-   Rule: <span class="principle">#12 No Broad Exception Catching</span>
-
-   <span class="fn">_send_email</span> catches <span class="fn">Exception</span> and silently discards it. A typo inside
-   the method, a <span class="fn">TypeError</span>, even a <span class="fn">KeyboardInterrupt</span> would be swallowed.
-   Order appears to succeed but email silently fails with no trace.
-
-   <span class="comment"># Before</span>
-   <span class="kw">def</span> <span class="fn">_send_email</span>(self, to, subject, body):
-       <span class="kw">try</span>:
-           ...
-       <span class="kw">except</span> <span class="fn">Exception</span>:
-           <span class="kw">pass</span>
-
-   <span class="comment"># After — catch specific errors, log failures</span>
    <span class="kw">def</span> <span class="fn">_send_email</span>(self, to: <span class="fn">str</span>, subject: <span class="fn">str</span>, body: <span class="fn">str</span>) -> <span class="fn">None</span>:
        <span class="kw">try</span>:
-           ...
-       <span class="kw">except</span> (smtplib.SMTPException, ConnectionError) <span class="kw">as</span> e:
-           logger.warning(<span class="str">"Failed to send email to %s: %s"</span>, to, e)
+           msg = MIMEText(body)
+           msg[<span class="str">"Subject"</span>] = subject
+           msg[<span class="str">"To"</span>] = to
+           msg[<span class="str">"From"</span>] = <span class="str">"noreply@bookstore.com"</span>
+           server = smtplib.SMTP(<span class="str">"localhost"</span>, <span class="str">587</span>)
+           server.send_message(msg)
+           server.quit()
+       <span class="kw">except</span> (smtplib.SMTPException, ConnectionRefusedError, OSError) <span class="kw">as</span> e:
+           logging.warning(<span class="str">"Failed to send email to %s: %s"</span>, to, e)
 
-<span class="warn">6. Missing type hints on 15+ functions</span>
-   Multiple files
-   Rule: <span class="principle">Type hints on all function parameters and return types</span>
+<span class="dim">───</span>
+<span class="warn">Important</span>
 
-   File                             Function                          Missing
-   <span class="dim">───────────────────────────────  ────────────────────────────────  ─────────────────────</span>
-   <span class="file">services/book_service.py:15</span>     <span class="fn">get_all_books</span>()                  return type
-   <span class="file">services/book_service.py:25</span>     <span class="fn">get_book</span>(book_id)                param + return
-   <span class="file">services/book_service.py:34</span>     <span class="fn">search_books</span>(query)              param + return
-   <span class="file">services/order_service.py:9</span>     <span class="fn">create_order</span>(self, ...)          all params + return
-   <span class="file">services/order_service.py:66</span>    <span class="fn">get_order</span>(self, order_id)        param + return
-   <span class="file">services/order_service.py:80</span>    <span class="fn">update_status</span>(self, ...)         all params + return
-   <span class="file">services/order_service.py:105</span>   <span class="fn">cancel_order</span>(self, order_id)     param + return
-   <span class="file">services/order_service.py:133</span>   <span class="fn">get_order_history</span>(self, ...)     param + return
-   <span class="file">services/order_service.py:139</span>   <span class="fn">calculate_shipping</span>(self, ...)    param + return
-   <span class="file">services/order_service.py:154</span>   <span class="fn">_send_email</span>(self, ...)           all params + return
-   <span class="file">utils/helpers.py:4</span>              <span class="fn">format_price</span>(amount, currency)   all params + return
-   <span class="file">utils/helpers.py:15</span>             <span class="fn">get_bestsellers</span>(limit)           param + return
-   <span class="file">utils/helpers.py:22</span>             <span class="fn">validate_isbn</span>(isbn)              param + return
-   <span class="file">utils/helpers.py:30</span>             <span class="fn">generate_report</span>()                return
+<span class="warn">5. No type hints on most functions</span>
+   Files: <span class="file">services/book_service.py:15,25,34</span>, <span class="file">services/order_service.py:9,66,80,105,133,139</span>,
+   <span class="file">utils/helpers.py:4,15,22,30</span>
+   Principles: <span class="principle">P7 Keep Things Simple</span> <span class="dim">(type hints are documentation)</span>
 
-<span class="warn">7. Error responses return 200 with error body instead of HTTPException</span>
-   <span class="file">routers/books.py:21-22</span>, <span class="file">routers/orders.py:13-14,24-25</span>
-   Principle: <span class="principle">P7 Keep Things Simple</span> (HTTP semantics exist for this)
+   <span class="fn">get_all_books</span>(), <span class="fn">get_book</span>(book_id), <span class="fn">search_books</span>(query), and nearly every <span class="fn">OrderService</span>
+   method lack parameter and return type annotations. This hurts IDE support and makes
+   the contract unclear.
 
-   Returning {<span class="str">"error"</span>: <span class="str">"Book not found"</span>} sends HTTP 200 with an error
-   body. Clients cannot distinguish success from failure by status code.
+   Fix (example):
 
-   <span class="comment"># Before (routers/books.py:20-23) — returns HTTP 200 with error!</span>
-   book = get_book(book_id)
-   <span class="kw">if not</span> book:
-       <span class="kw">return</span> {<span class="str">"error"</span>: <span class="str">"Book not found"</span>}
-   <span class="kw">return</span> book
+   <span class="kw">def</span> <span class="fn">get_all_books</span>() -> <span class="fn">list</span>[<span class="fn">dict</span>[<span class="fn">str</span>, Any]]: ...
+   <span class="kw">def</span> <span class="fn">get_book</span>(book_id: <span class="fn">int</span>) -> <span class="fn">dict</span>[<span class="fn">str</span>, Any] | <span class="fn">None</span>: ...
+   <span class="kw">def</span> <span class="fn">search_books</span>(query: <span class="fn">str</span>) -> <span class="fn">list</span>[<span class="fn">dict</span>[<span class="fn">str</span>, Any]]: ...
 
-   <span class="comment"># After — proper HTTP error</span>
+<span class="dim">───</span>
+<span class="warn">6. Manual session management leaks on exceptions</span>
+   Files: <span class="file">services/book_service.py:6-12</span>, <span class="file">services/order_service.py:10-57</span> <span class="dim">(every method)</span>
+   Principles: <span class="principle">P2 Low Coupling</span>
+   Pattern: <span class="pattern">Context manager</span> for resource management
+
+   Every function does <span class="fn">db</span> = <span class="fn">SessionLocal</span>() then <span class="fn">db</span>.close() at the end. If any exception
+   occurs between open and close, the session leaks. The <span class="fn">get_db</span>() generator in <span class="file">database.py</span>
+   already solves this but is never used.
+
+   Fix: Use the existing <span class="fn">get_db</span>() as a FastAPI dependency, or use a context manager:
+
+   <span class="kw">from</span> contextlib <span class="kw">import</span> contextmanager
+
+   <span class="kw">@</span>contextmanager
+   <span class="kw">def</span> <span class="fn">get_session</span>():
+       db = SessionLocal()
+       <span class="kw">try</span>:
+           <span class="kw">yield</span> db
+       <span class="kw">finally</span>:
+           db.close()
+
+   <span class="comment"># Usage</span>
+   <span class="kw">def</span> <span class="fn">get_all_books</span>() -> <span class="fn">list</span>[<span class="fn">dict</span>]:
+       <span class="kw">with</span> get_session() <span class="kw">as</span> db:
+           books = db.query(BookModel).all()
+           <span class="kw">return</span> [{<span class="str">"id"</span>: b.id, ...} <span class="kw">for</span> b <span class="kw">in</span> books]
+
+<span class="dim">───</span>
+<span class="warn">7. Order status uses bare str — should be an Enum</span>
+   File: <span class="file">models/order.py:16</span>, <span class="file">services/order_service.py:89,91,111,114</span>
+   Principles: <span class="principle">P6 Start with the Data</span>
+   Pattern: <span class="pattern">Enum for fixed options</span> (Rule 1: No Type Abuse)
+
+   Status values <span class="str">"pending"</span>, <span class="str">"shipped"</span>, <span class="str">"delivered"</span>, <span class="str">"cancelled"</span> are strewn across
+   the codebase as string literals — typo-prone and without IDE autocomplete.
+
+   Fix:
+
+   <span class="kw">from</span> enum <span class="kw">import</span> Enum
+
+   <span class="kw">class</span> <span class="fn">OrderStatus</span>(<span class="fn">str</span>, <span class="fn">Enum</span>):
+       PENDING = <span class="str">"pending"</span>
+       SHIPPED = <span class="str">"shipped"</span>
+       DELIVERED = <span class="str">"delivered"</span>
+       CANCELLED = <span class="str">"cancelled"</span>
+
+   <span class="kw">class</span> <span class="fn">Order</span>(<span class="fn">BaseModel</span>):
+       <span class="comment"># ...</span>
+       status: <span class="fn">OrderStatus</span>
+
+<span class="dim">───</span>
+<span class="warn">8. Errors returned as dicts instead of exceptions</span>
+   Files: <span class="file">routers/books.py:21-22</span>, <span class="file">routers/orders.py:14,24-25</span>,
+   <span class="file">services/order_service.py:112-113</span>
+   Principles: <span class="principle">P3 Depend on Abstractions</span>
+   Pattern: <span class="pattern">Custom exception classes</span> — raise at logic layer, catch at API boundary
+
+   Returning {<span class="str">"error"</span>: <span class="str">"Book not found"</span>} as a 200 response is an API anti-pattern.
+   Clients can't distinguish success from failure by HTTP status code.
+
+   Fix:
+
+   <span class="comment"># services/exceptions.py</span>
+   <span class="kw">class</span> <span class="fn">BookNotFoundError</span>(<span class="fn">Exception</span>): ...
+   <span class="kw">class</span> <span class="fn">OrderNotFoundError</span>(<span class="fn">Exception</span>): ...
+   <span class="kw">class</span> <span class="fn">InvalidOrderStateError</span>(<span class="fn">Exception</span>): ...
+
+   <span class="comment"># services/order_service.py</span>
+   <span class="kw">def</span> <span class="fn">cancel_order</span>(self, order_id: <span class="fn">int</span>) -> <span class="fn">dict</span>:
+       ...
+       <span class="kw">if</span> order.status != OrderStatus.PENDING:
+           <span class="kw">raise</span> <span class="fn">InvalidOrderStateError</span>(<span class="str">"Can only cancel pending orders"</span>)
+
+   <span class="comment"># routers/orders.py</span>
    <span class="kw">from</span> fastapi <span class="kw">import</span> HTTPException
 
-   book = get_book(book_id)
-   <span class="kw">if not</span> book:
-       <span class="kw">raise</span> HTTPException(status_code=<span class="str">404</span>, detail=<span class="str">"Book not found"</span>)
-   <span class="kw">return</span> book
+   <span class="kw">@</span>router.delete(<span class="str">"/{order_id}"</span>)
+   <span class="kw">def</span> <span class="fn">cancel</span>(order_id: <span class="fn">int</span>):
+       <span class="kw">try</span>:
+           <span class="kw">return</span> order_service.cancel_order(order_id)
+       <span class="kw">except</span> <span class="fn">OrderNotFoundError</span>:
+           <span class="kw">raise</span> HTTPException(status_code=<span class="str">404</span>, detail=<span class="str">"Order not found"</span>)
+       <span class="kw">except</span> <span class="fn">InvalidOrderStateError</span> <span class="kw">as</span> e:
+           <span class="kw">raise</span> HTTPException(status_code=<span class="str">409</span>, detail=<span class="fn">str</span>(e))
 
-<span class="warn">8. Missing HTTP status codes on POST endpoints</span>
-   <span class="file">routers/books.py:8</span>, <span class="file">routers/orders.py:10</span>
+<span class="dim">───</span>
+<span class="warn">9. utils/helpers.py is a dumping ground with mixed concerns</span>
+   File: <span class="file">utils/helpers.py:1-38</span>
+   Principles: <span class="principle">P1 High Cohesion</span>, <span class="principle">P2 Low Coupling</span>
+   Pattern: <span class="pattern">Rule 16</span> — Avoid generic package names
 
-   POST endpoints default to 200 instead of 201 Created.
+   This file has formatting (<span class="fn">format_price</span>), DB queries (<span class="fn">get_bestsellers</span>,
+   <span class="fn">generate_report</span>), and validation (<span class="fn">validate_isbn</span>) — three unrelated
+   responsibilities. The name <span class="file">utils/helpers</span> is a code smell per Rule 16.
 
-   <span class="comment"># Before</span>
-   <span class="kw">@</span>router.post(<span class="str">"/"</span>)
-   <span class="kw">def</span> <span class="fn">add_book</span>(data: <span class="fn">BookCreate</span>):
-
-   <span class="comment"># After</span>
-   <span class="kw">@</span>router.post(<span class="str">"/"</span>, status_code=<span class="str">201</span>, response_model=<span class="fn">Book</span>)
-   <span class="kw">def</span> <span class="fn">add_book</span>(data: <span class="fn">BookCreate</span>):
-
-<span class="warn">9. Returning raw dicts instead of Pydantic models</span>
-   <span class="file">services/book_service.py:20-22</span>, <span class="file">services/order_service.py:58-64,71-77</span>
-   Principle: <span class="principle">P6 Start with the Data</span>
-
-   Functions return hand-built {<span class="str">"id"</span>: ..., <span class="str">"title"</span>: ...} dicts instead
-   of using the Pydantic models already defined in <span class="file">models/</span>. Loses type
-   safety, validation, serialization control, and IDE support.
-
-   <span class="comment"># Before (services/book_service.py:19-22)</span>
-   result = []
-   <span class="kw">for</span> b <span class="kw">in</span> books:
-       result.append({<span class="str">"id"</span>: b.id, <span class="str">"title"</span>: b.title, <span class="str">"author"</span>: b.author,
-                      <span class="str">"isbn"</span>: b.isbn, <span class="str">"price"</span>: b.price})
-   <span class="kw">return</span> result
-
-   <span class="comment"># After — use the model you already defined</span>
-   <span class="kw">return</span> [Book(id=b.id, title=b.title, author=b.author,
-                isbn=b.isbn, price=b.price) <span class="kw">for</span> b <span class="kw">in</span> books]
-
-<span class="warn">10. Deprecated Pydantic v1 API</span>
-    <span class="file">services/book_service.py:7</span> — data.dict()
-
-    Pydantic v2 renamed <span class="fn">.dict</span>() to <span class="fn">.model_dump</span>(). The old method
-    still works but is deprecated and will be removed.
-
-    <span class="comment"># Before (Pydantic v1)</span>
-    book = BookModel(**data.dict())
-
-    <span class="comment"># After (Pydantic v2)</span>
-    book = BookModel(**data.model_dump())
+   Fix: Move each function to where it belongs:
+   - <span class="fn">format_price</span> → <span class="file">models/book.py</span> or a formatting module
+   - <span class="fn">get_bestsellers</span> → <span class="file">services/book_service.py</span>
+   - <span class="fn">validate_isbn</span> → <span class="file">models/book.py</span> (as a Pydantic validator)
+   - <span class="fn">generate_report</span> → <span class="file">services/report_service.py</span>
 
 <span class="dim">───</span>
 <span class="dim">Suggestions</span>
 
-<span class="dim">11. if/elif chain for discount logic — Strategy pattern</span>
-    <span class="file">services/order_service.py:19-31</span>
-    Pattern: <span class="pattern">Strategy</span> — <span class="fn">Callable</span> type alias + dict mapping
+<span class="dim">10. Discount logic uses redundant if/elif — replace with dict mapping</span>
+    File: <span class="file">services/order_service.py:19-31</span>
+    Principles: <span class="principle">P5 Separate Creation from Use</span>
+    Pattern: <span class="pattern">Strategy pattern</span> — dict mapping replaces if/elif
 
-    <span class="comment"># Before (services/order_service.py:19-31)</span>
-    <span class="kw">if</span> quantity >= <span class="str">10</span>:
-        discount_type = <span class="str">"bulk"</span>
-    <span class="kw">elif</span> quantity >= <span class="str">5</span>:
-        discount_type = <span class="str">"medium"</span>
-    <span class="kw">else</span>:
-        discount_type = <span class="str">"none"</span>
+    The discount code first maps quantity to a discount type string, then maps that
+    string to a multiplier — two cascaded if/elif chains.
 
-    <span class="kw">if</span> discount_type == <span class="str">"bulk"</span>:
-        total = total * <span class="str">0.8</span>
-    <span class="kw">elif</span> discount_type == <span class="str">"medium"</span>:
-        total = total * <span class="str">0.9</span>
-    <span class="kw">elif</span> discount_type == <span class="str">"none"</span>:
-        <span class="kw">pass</span>
+    Fix:
 
-    <span class="comment"># After — discount strategies as functions</span>
-    <span class="kw">from</span> typing <span class="kw">import</span> Callable
+    DISCOUNT_TIERS: <span class="fn">list</span>[<span class="fn">tuple</span>[<span class="fn">int</span>, <span class="fn">float</span>]] = [
+        (<span class="str">10</span>, <span class="str">0.8</span>),   <span class="comment"># 20% off for 10+</span>
+        (<span class="str">5</span>, <span class="str">0.9</span>),    <span class="comment"># 10% off for 5+</span>
+    ]
 
-    DiscountFn = <span class="fn">Callable</span>[[<span class="fn">float</span>, <span class="fn">int</span>], <span class="fn">float</span>]
-
-    <span class="kw">def</span> <span class="fn">bulk_discount</span>(total: <span class="fn">float</span>, quantity: <span class="fn">int</span>) -> <span class="fn">float</span>:
-        <span class="kw">return</span> total * <span class="str">0.8</span>
-
-    <span class="kw">def</span> <span class="fn">medium_discount</span>(total: <span class="fn">float</span>, quantity: <span class="fn">int</span>) -> <span class="fn">float</span>:
-        <span class="kw">return</span> total * <span class="str">0.9</span>
-
-    <span class="kw">def</span> <span class="fn">no_discount</span>(total: <span class="fn">float</span>, quantity: <span class="fn">int</span>) -> <span class="fn">float</span>:
+    <span class="kw">def</span> <span class="fn">compute_discount</span>(total: <span class="fn">float</span>, quantity: <span class="fn">int</span>) -> <span class="fn">float</span>:
+        <span class="kw">for</span> min_qty, multiplier <span class="kw">in</span> DISCOUNT_TIERS:
+            <span class="kw">if</span> quantity >= min_qty:
+                <span class="kw">return</span> total * multiplier
         <span class="kw">return</span> total
 
-    <span class="kw">def</span> <span class="fn">get_discount</span>(quantity: <span class="fn">int</span>) -> DiscountFn:
-        <span class="kw">if</span> quantity >= <span class="str">10</span>:
-            <span class="kw">return</span> bulk_discount
-        <span class="kw">elif</span> quantity >= <span class="str">5</span>:
-            <span class="kw">return</span> medium_discount
-        <span class="kw">return</span> no_discount
+<span class="dim">───</span>
+<span class="dim">11. Magic numbers throughout</span>
+    Files: <span class="file">services/order_service.py:19,21,26-27,145-150,160</span>, <span class="file">utils/helpers.py:23-26</span>
+    Principles: <span class="principle">P7 Keep Things Simple</span> <span class="dim">(Rule 11: No Magic Numbers)</span>
 
-    <span class="comment"># Usage</span>
-    discount = get_discount(quantity)
-    total = discount(total, quantity)
+    <span class="str">0.8</span>, <span class="str">0.9</span>, <span class="str">50</span>, <span class="str">25</span>, <span class="str">4.99</span>, <span class="str">9.99</span>, <span class="str">587</span>, <span class="str">10</span>, <span class="str">5</span>, <span class="str">13</span>, <span class="str">10</span> — all unnamed literals.
 
-<span class="dim">12. if/elif chain for currency formatting — dict mapping</span>
-    <span class="file">utils/helpers.py:4-12</span>
-    Pattern: <span class="pattern">Registry</span> — dict mapping replaces if/elif
+    Fix: Extract into named constants or configurable attributes:
 
-    <span class="comment"># Before</span>
-    <span class="kw">def</span> <span class="fn">format_price</span>(amount, currency):
-        <span class="kw">if</span> currency == <span class="str">"USD"</span>:
-            <span class="kw">return</span> f<span class="str">"${amount:.2f}"</span>
-        <span class="kw">elif</span> currency == <span class="str">"EUR"</span>:
-            <span class="kw">return</span> f<span class="str">"€{amount:.2f}"</span>
-        <span class="kw">elif</span> currency == <span class="str">"GBP"</span>:
-            <span class="kw">return</span> f<span class="str">"£{amount:.2f}"</span>
-        <span class="kw">else</span>:
-            <span class="kw">return</span> f<span class="str">"{amount:.2f} {currency}"</span>
+    FREE_SHIPPING_THRESHOLD = <span class="str">50.0</span>
+    REDUCED_SHIPPING_THRESHOLD = <span class="str">25.0</span>
+    REDUCED_SHIPPING_COST = <span class="str">4.99</span>
+    STANDARD_SHIPPING_COST = <span class="str">9.99</span>
+    SMTP_PORT = <span class="str">587</span>
 
-    <span class="comment"># After</span>
+<span class="dim">───</span>
+<span class="dim">12. format_price if/elif chain — use dict mapping</span>
+    File: <span class="file">utils/helpers.py:4-12</span>
+    Principles: <span class="principle">P5 Separate Creation from Use</span>
+    Pattern: <span class="pattern">Dict mapping</span> replaces if/elif
+
+    Fix:
+
     CURRENCY_SYMBOLS: <span class="fn">dict</span>[<span class="fn">str</span>, <span class="fn">str</span>] = {
-        <span class="str">"USD"</span>: <span class="str">"$"</span>, <span class="str">"EUR"</span>: <span class="str">"€"</span>, <span class="str">"GBP"</span>: <span class="str">"£"</span>,
+        <span class="str">"USD"</span>: <span class="str">"$"</span>,
+        <span class="str">"EUR"</span>: <span class="str">"€"</span>,
+        <span class="str">"GBP"</span>: <span class="str">"£"</span>,
     }
 
     <span class="kw">def</span> <span class="fn">format_price</span>(amount: <span class="fn">float</span>, currency: <span class="fn">str</span>) -> <span class="fn">str</span>:
@@ -426,67 +471,53 @@ Layer Violations
             <span class="kw">return</span> f<span class="str">"{symbol}{amount:.2f}"</span>
         <span class="kw">return</span> f<span class="str">"{amount:.2f} {currency}"</span>
 
-<span class="dim">13. Bare string constants for order status — use StrEnum</span>
-    <span class="file">services/order_service.py:38,86,89,95,111,114</span>
+<span class="dim">───</span>
+<span class="dim">13. Inconsistent return types in book_service.py</span>
+    File: <span class="file">services/book_service.py:5-12 vs 15-22</span>
+    Principles: <span class="principle">P1 High Cohesion</span>
 
-    <span class="comment"># Before — typo-prone strings scattered across the codebase</span>
-    status=<span class="str">"pending"</span>
-    <span class="kw">if</span> order.status != <span class="str">"pending"</span>:
-    <span class="kw">if</span> new_status == <span class="str">"shipped"</span>:
-
-    <span class="comment"># After</span>
-    <span class="kw">from</span> enum <span class="kw">import</span> StrEnum
-
-    <span class="kw">class</span> <span class="fn">OrderStatus</span>(<span class="fn">StrEnum</span>):
-        PENDING = <span class="str">"pending"</span>
-        SHIPPED = <span class="str">"shipped"</span>
-        DELIVERED = <span class="str">"delivered"</span>
-        CANCELLED = <span class="str">"cancelled"</span>
-
-<span class="dim">14. Mixed concerns in utils/helpers.py — split by domain</span>
-    <span class="file">utils/helpers.py:1-38</span>
-    Principle: <span class="principle">P1 High Cohesion</span> | Rule: <span class="principle">#16 Avoid Generic Package Names</span>
-
-    <span class="file">helpers.py</span> contains formatting (<span class="fn">format_price</span>), validation (<span class="fn">validate_isbn</span>),
-    DB queries (<span class="fn">get_bestsellers</span>), and reporting (<span class="fn">generate_report</span>). These are
-    four unrelated responsibilities. The <span class="file">utils/</span> package name is a dumping ground.
-
-    Fix: Move <span class="fn">get_bestsellers</span> and <span class="fn">generate_report</span> into <span class="file">services/</span>.
-    Move <span class="fn">format_price</span> into <span class="file">models/</span> or a <span class="file">formatting.py</span> module.
-    Move <span class="fn">validate_isbn</span> into <span class="file">models/book.py</span> or a <span class="file">validators.py</span> module.
-
-<span class="dim">15. Notification side effects interleaved with business logic — Pub/Sub</span>
-    <span class="file">services/order_service.py:44-49,89-100,121-125</span>
-    Pattern: <span class="pattern">Pub/Sub</span>
-
-    <span class="fn">_send_email</span> calls are scattered throughout <span class="fn">create_order</span>, <span class="fn">update_status</span>,
-    and <span class="fn">cancel_order</span>. Each new side effect (Slack notification, analytics
-    event, audit log) requires modifying every method.
-
-    <span class="comment"># After — event-based notification</span>
-    EventHandler = <span class="fn">Callable</span>[[<span class="fn">dict</span>], <span class="fn">None</span>]
-    subscribers: <span class="fn">dict</span>[<span class="fn">str</span>, <span class="fn">list</span>[EventHandler]] = {}
-
-    <span class="kw">def</span> <span class="fn">subscribe</span>(event: <span class="fn">str</span>, handler: EventHandler) -> <span class="fn">None</span>:
-        subscribers.setdefault(event, []).append(handler)
-
-    <span class="kw">def</span> <span class="fn">post_event</span>(event: <span class="fn">str</span>, data: <span class="fn">dict</span>) -> <span class="fn">None</span>:
-        <span class="kw">for</span> handler <span class="kw">in</span> subscribers.get(event, []):
-            handler(data)
-
-    <span class="comment"># In create_order:</span>
-    post_event(<span class="str">"order.created"</span>, {<span class="str">"order_id"</span>: order.id, <span class="str">"email"</span>: customer_email})
-
-    <span class="comment"># Wire handlers in composition root:</span>
-    subscribe(<span class="str">"order.created"</span>, send_confirmation_email)
-    subscribe(<span class="str">"order.created"</span>, log_order)
+    <span class="fn">create_book</span>() returns a <span class="fn">Book</span> Pydantic model, but <span class="fn">get_all_books</span>() returns
+    <span class="fn">list</span>[<span class="fn">dict</span>] and <span class="fn">get_book</span>() returns <span class="fn">dict</span> | <span class="fn">None</span>. Pick one convention —
+    preferably return Pydantic models consistently.
 
 <span class="dim">───</span>
-<span class="heading">Summary</span>: 3 critical (layer skip, no DI, no resource management),
-7 important (god class, broad catch, missing types, wrong HTTP responses,
-missing status codes, raw dicts, deprecated API), 5 suggestions (Strategy,
-Registry, StrEnum, split utils, Pub/Sub). The biggest wins would be
-introducing a <span class="fn">DataInterface</span> Protocol and splitting <span class="fn">OrderService</span>.
+<span class="dim">14. Deprecated Pydantic v1 API</span>
+    File: <span class="file">services/book_service.py:7</span>
+
+    <span class="fn">data.dict</span>() is deprecated in Pydantic v2. Use <span class="fn">data.model_dump</span>().
+
+<span class="dim">───</span>
+<span class="dim">15. Module-level OrderService() instantiation</span>
+    File: <span class="file">routers/orders.py:7</span>
+    Principles: <span class="principle">P5 Separate Creation from Use</span>
+
+    <span class="fn">order_service</span> = <span class="fn">OrderService</span>() is created at module import time as global
+    state. Should be created via FastAPI's <span class="fn">Depends</span>() for testability.
+
+<span class="dim">───</span>
+<span class="heading">Summary</span>
+
+┌─────────────┬───────┬─────────────────────────────────────────┐
+│  Severity   │ Count │               Key Themes                │
+├─────────────┼───────┼─────────────────────────────────────────┤
+│ <span class="err">Critical</span>    │ 4     │ God class, no abstractions, layer skip, │
+│             │       │ swallowed exceptions                    │
+├─────────────┼───────┼─────────────────────────────────────────┤
+│             │       │ Missing type hints, session leaks,      │
+│ <span class="warn">Important</span>   │ 5     │ string status, dict errors,             │
+│             │       │ dumping-ground utils                    │
+├─────────────┼───────┼─────────────────────────────────────────┤
+│             │       │ Dict mappings, magic numbers,           │
+│ <span class="dim">Suggestions</span> │ 6     │ inconsistent returns, deprecated API,   │
+│             │       │ global state                            │
+└─────────────┴───────┴─────────────────────────────────────────┘
+
+Top 3 priorities:
+1. Introduce a <span class="fn">DataInterface</span> Protocol and inject it — this unblocks testability
+   for everything else
+2. Break up <span class="fn">OrderService</span> into focused modules (order CRUD, discounts, notifications)
+3. Add <span class="fn">OrderStatus</span> enum and custom exception classes to replace string errors and
+   dict error returns
     </div>
 
     <h2>Links</h2>

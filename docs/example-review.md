@@ -1,453 +1,413 @@
-# Example: `/review-architecture bookstore-api/`
+# Example Output
 
-> Output from running the in-depth architecture review against a test `bookstore-api/` project with intentional issues. See the [color-coded version](https://mktoronto.github.io/python-clean-architecture/) on the landing page.
+> From running `/review-architecture` against a test bookstore-api project. See the [color-coded version](https://mktoronto.github.io/python-clean-architecture/) on the landing page.
+
+```
+Architecture Review: python-clean-architecture/testing/
+
+Architecture Summary
+
+Layers
+──────
+API:        routers/books.py, routers/orders.py
+Logic:      services/book_service.py, services/order_service.py
+Database:   db/database.py
+Models:     models/book.py, models/order.py
+Unclear:    utils/helpers.py (mixed — formatting, validation, AND direct DB access)
+
+Dependency Flows
+────────────────
+routers/books.py → services/book_service.py → db/database.py      ✓
+routers/orders.py → services/order_service.py → db/database.py    ✓
+routers/orders.py → db/database.py                                 ⚠ layer skip
+utils/helpers.py → db/database.py                                  ⚠ unclear layer
+
+Layer Violations
+────────────────
+⚠ routers/orders.py:2,21-32 — imports and queries DB directly, bypassing service
+⚠ utils/helpers.py:1,16,31 — utility module directly accesses database layer
+
+Missing Abstraction Layer
+─────────────────────────
+No DataInterface Protocol exists. Both services import concrete SessionLocal and
+ORM models directly. Operations cannot be tested without a real database.
 
 ---
+What Works Well
 
-## Architecture Summary
-
-### Layers
-
-| Layer | Files |
-|-------|-------|
-| **API** | `routers/books.py`, `routers/orders.py` |
-| **Logic** | `services/book_service.py`, `services/order_service.py` |
-| **Database** | `db/database.py` (models + session factory) |
-| **Models** | `models/book.py`, `models/order.py` (Pydantic) |
-| **Unclear** | `utils/helpers.py` (formatting + DB queries -- mixed concerns) |
-
-### Dependency Flows
-
-```
-routers/books.py  -> services/book_service.py  -> db/database.py        [ok] (no abstraction)
-routers/orders.py -> services/order_service.py -> db/database.py        [ok] (no abstraction)
-routers/orders.py -> db/database.py                                      [!] layer skip
-utils/helpers.py  -> db/database.py                                      [!] mixed concerns
-```
-
-### Layer Violations
-
-- `routers/orders.py:2` imports `SessionLocal` + `OrderModel` directly
-- `routers/orders.py:21` performs raw DB query inside an endpoint
-- `utils/helpers.py:1` imports DB layer -- utility module should not touch persistence
-- No `DataInterface` Protocol exists -- all services hardcode `SessionLocal()`
+- Create/Read model separation — models/book.py correctly separates BookCreate
+  (input) from Book (output with id). Same pattern in models/order.py.
+- Router prefixing in main.py — Clean FastAPI setup with /books and /orders
+  prefixes and tags.
+- get_db() generator exists in db/database.py:31-36 — A proper session dependency
+  is defined, even though nothing currently uses it.
+- Service layer exists — The project has the right instinct to separate routers
+  from business logic. The three-layer structure is present in skeleton form.
 
 ---
+Findings by Severity
 
-## What Works Well
+Critical
 
-- **Good Pydantic model separation** -- `BookCreate` / `Book` and `OrderCreate` / `Order` properly separate input from output (`models/book.py`, `models/order.py`)
-- **Clean `main.py`** -- simple composition with tagged routers, no business logic
-- **Consistent router structure** -- proper `APIRouter()` with prefix/tag organization
-- **Book service functions are individually small** -- each under 10 lines
+1. OrderService is a God Class — 7+ responsibilities in one class
+   File: services/order_service.py:6-177
+   Principles: P1 High Cohesion, P7 Keep Things Simple
+   Pattern: Extract Class — split into focused collaborators
 
----
+   The docstring says it all: "Handles orders, payments, inventory, notifications,
+   discounts, and shipping." This class does order CRUD, discount calculation, email
+   notifications, inventory management, logging, refund processing, and shipping
+   calculation.
 
-## Findings by Severity
+   Fix: Extract each responsibility into its own module:
 
-### Critical
+   # services/discount.py
+   from typing import Callable
 
-#### 1. Layer skip -- router queries DB directly
+   DiscountFunction = Callable[[float, int], float]
 
-**`routers/orders.py:2,19-32`**
-Principles: **P3 Depend on Abstractions**, **P2 Low Coupling**
+   DISCOUNT_RULES: dict[str, float] = {
+       "bulk": 0.8,
+       "medium": 0.9,
+   }
 
-The `read_order` endpoint imports `SessionLocal` and `OrderModel`, then runs raw SQLAlchemy queries inside the router. Bypasses the service layer entirely.
+   QUANTITY_THRESHOLDS: list[tuple[int, str]] = [
+       (10, "bulk"),
+       (5, "medium"),
+   ]
 
-```python
-# Before (routers/orders.py:19-32)
-from db.database import SessionLocal, OrderModel
+   def apply_quantity_discount(total: float, quantity: int) -> float:
+       for threshold, tier in QUANTITY_THRESHOLDS:
+           if quantity >= threshold:
+               return total * DISCOUNT_RULES[tier]
+       return total
 
-@router.get("/{order_id}")
-def read_order(order_id: int):
-    db = SessionLocal()
-    order = db.query(OrderModel).filter(OrderModel.id == order_id).first()
-    db.close()
-    ...
-```
+   # services/order_service.py — reduced to order CRUD only
+   from typing import Protocol
 
-```python
-# After -- delegate to service, raise proper HTTP errors
-from fastapi import HTTPException
+   class OrderDataInterface(Protocol):
+       def create(self, book_id: int, quantity: int,
+                  customer_email: str, total: float) -> dict: ...
+       def get(self, order_id: int) -> dict | None: ...
+       def update_status(self, order_id: int, status: str) -> dict | None: ...
 
-@router.get("/{order_id}", response_model=Order)
-def read_order(order_id: int):
-    order = order_service.get_order(order_id)
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-    return order
-```
-
----
-
-#### 2. No dependency injection -- all services hardcode DB access
-
-**`services/book_service.py:1`**, **`services/order_service.py:3`**
-Principle: **P3 Depend on Abstractions**
-
-Every function creates `SessionLocal()` internally. No `DataInterface` Protocol exists. Testing requires a real database -- there is no way to inject a stub.
-
-```python
-# Before (services/book_service.py:1,5-6)
-from db.database import SessionLocal, BookModel
-
-def create_book(data: BookCreate) -> Book:
-    db = SessionLocal()
-    book = BookModel(**data.dict())
-    ...
-```
-
-```python
-# After -- define a Protocol, inject it
-class BookDataInterface(Protocol):
-    def create(self, data: dict) -> dict: ...
-    def get_all(self) -> list[dict]: ...
-    def get_by_id(self, book_id: int) -> dict | None: ...
-
-def create_book(data: BookCreate, data_interface: BookDataInterface) -> Book:
-    result = data_interface.create(data.model_dump())
-    return Book(**result)
-```
+   def create_order(
+       data_interface: OrderDataInterface,
+       book_id: int,
+       quantity: int,
+       customer_email: str,
+       compute_discount: DiscountFunction = apply_quantity_discount,
+   ) -> dict:
+       book = data_interface.get_book(book_id)
+       if not book:
+           raise BookNotFoundError(f"Book {book_id} not found")
+       total = compute_discount(book["price"] * quantity, quantity)
+       return data_interface.create(book_id, quantity, customer_email, total)
 
 ---
+2. No DataInterface Protocol — services tightly coupled to concrete DB
+   File: services/book_service.py:1, services/order_service.py:3
+   Principles: P3 Depend on Abstractions, P2 Low Coupling
+   Pattern: Repository pattern — Protocol-based DataInterface
 
-#### 3. No resource management -- leaked DB connections on exceptions
+   Every service function directly imports SessionLocal and ORM models. This makes
+   unit testing impossible without a real database and prevents swapping storage
+   backends.
 
-**`services/book_service.py:6-11`**, **`services/order_service.py`** (every method)
-Principle: **P7 Keep Things Simple** | Rule: **#13 Use Context Managers**
+   Fix:
 
-Every function does `db = SessionLocal()` ... `db.close()`. If any line between them raises, the connection leaks. `OrderService` methods have multiple early return paths each needing their own `db.close()`.
+   # db/data_interface.py
+   from typing import Protocol
 
-```python
-# Before (services/order_service.py:10-14)
-db = SessionLocal()
-book = db.query(BookModel).filter(BookModel.id == book_id).first()
-if not book:
-    db.close()
-    return None
-```
+   class BookDataInterface(Protocol):
+       def create(self, title: str, author: str, isbn: str, price: float) -> dict: ...
+       def get_all(self) -> list[dict]: ...
+       def get_by_id(self, book_id: int) -> dict | None: ...
+       def search_by_title(self, query: str) -> list[dict]: ...
 
-```python
-# After -- context manager guarantees cleanup
-@contextmanager
-def get_session():
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
+   # services/book_service.py — accepts Protocol, not concrete DB
+   def create_book(data_interface: BookDataInterface, data: BookCreate) -> Book:
+       return data_interface.create(**data.model_dump())
 
-def get_order(self, order_id: int) -> Order | None:
-    with get_session() as db:
-        order = db.query(OrderModel).filter(OrderModel.id == order_id).first()
-        return Order(**order.__dict__) if order else None
-```
+   def get_all_books(data_interface: BookDataInterface) -> list[dict]:
+       return data_interface.get_all()
 
----
+   # routers/books.py — composition root wires concrete implementation
+   from db.database import DBBookInterface
 
-### Important
-
-#### 4. God class -- OrderService has 7 responsibilities
-
-**`services/order_service.py:6`** -- 177 lines
-Principle: **P1 High Cohesion**
-
-Handles: order CRUD, discount calculation, email notifications, inventory management, logging, refund processing, and shipping calculation. The docstring says it: *"Handles orders, payments, inventory, notifications, discounts, and shipping."*
-
-**Fix:** Extract into focused collaborators -- `DiscountCalculator`, `NotificationService`, `ShippingCalculator`, `RefundProcessor`. Keep `OrderOperations` for pure CRUD only.
+   @router.post("/")
+   def add_book(data: BookCreate, db: Session = Depends(get_db)):
+       data_interface = DBBookInterface(db)
+       return create_book(data_interface, data)
 
 ---
+3. Router bypasses service layer — direct DB access
+   File: routers/orders.py:2,21-32
+   Principles: P2 Low Coupling, P1 High Cohesion
 
-#### 5. Broad exception catching -- `except Exception: pass`
+   The read_order endpoint directly imports SessionLocal and OrderModel and queries
+   the database, even though OrderService.get_order() already does this.
 
-**`services/order_service.py:163-164`**
-Rule: **#12 No Broad Exception Catching**
+   Fix: Remove the DB imports and use the service:
 
-`_send_email` catches `Exception` and silently discards it. A typo inside the method, a `TypeError`, even a `KeyboardInterrupt` would be swallowed. Order appears to succeed but email silently fails with no trace.
-
-```python
-# Before
-def _send_email(self, to, subject, body):
-    try:
-        ...
-    except Exception:
-        pass
-```
-
-```python
-# After -- catch specific errors, log failures
-def _send_email(self, to: str, subject: str, body: str) -> None:
-    try:
-        ...
-    except (smtplib.SMTPException, ConnectionError) as e:
-        logger.warning("Failed to send email to %s: %s", to, e)
-```
+   @router.get("/{order_id}")
+   def read_order(order_id: int):
+       result = order_service.get_order(order_id)
+       if not result:
+           raise HTTPException(status_code=404, detail="Order not found")
+       return result
 
 ---
+4. Broad exception catching silently swallows errors
+   File: services/order_service.py:154-164
+   Principles: P7 Keep Things Simple
+   Pattern: Custom exceptions — catch specific types only
 
-#### 6. Missing type hints on 15+ functions
+   # CURRENT: swallows everything including NameError, AttributeError
+   except Exception:
+       pass
 
-**Multiple files**
-Rule: **Type hints on all function parameters and return types**
+   This hides real bugs. If smtplib raises a ConnectionRefusedError, you'd never
+   know emails aren't being sent.
 
-| File | Function | Missing |
-|------|----------|---------|
-| `services/book_service.py:15` | `get_all_books()` | return type |
-| `services/book_service.py:25` | `get_book(book_id)` | param + return |
-| `services/book_service.py:34` | `search_books(query)` | param + return |
-| `services/order_service.py:9` | `create_order(self, ...)` | all params + return |
-| `services/order_service.py:66` | `get_order(self, order_id)` | param + return |
-| `services/order_service.py:80` | `update_status(self, ...)` | all params + return |
-| `services/order_service.py:105` | `cancel_order(self, order_id)` | param + return |
-| `services/order_service.py:133` | `get_order_history(self, ...)` | param + return |
-| `services/order_service.py:139` | `calculate_shipping(self, ...)` | param + return |
-| `services/order_service.py:154` | `_send_email(self, ...)` | all params + return |
-| `utils/helpers.py:4` | `format_price(amount, currency)` | all params + return |
-| `utils/helpers.py:15` | `get_bestsellers(limit)` | param + return |
-| `utils/helpers.py:22` | `validate_isbn(isbn)` | param + return |
-| `utils/helpers.py:30` | `generate_report()` | return |
+   Fix:
 
----
-
-#### 7. Error responses return 200 with error body instead of HTTPException
-
-**`routers/books.py:21-22`**, **`routers/orders.py:13-14,24-25`**
-Principle: **P7 Keep Things Simple** (HTTP semantics exist for this)
-
-Returning `{"error": "Book not found"}` sends HTTP 200 with an error body. Clients cannot distinguish success from failure by status code.
-
-```python
-# Before (routers/books.py:20-23) -- returns HTTP 200 with error!
-book = get_book(book_id)
-if not book:
-    return {"error": "Book not found"}
-return book
-```
-
-```python
-# After -- proper HTTP semantics
-from fastapi import HTTPException
-
-book = get_book(book_id)
-if not book:
-    raise HTTPException(status_code=404, detail="Book not found")
-return book
-```
+   def _send_email(self, to: str, subject: str, body: str) -> None:
+       try:
+           msg = MIMEText(body)
+           msg["Subject"] = subject
+           msg["To"] = to
+           msg["From"] = "noreply@bookstore.com"
+           server = smtplib.SMTP("localhost", 587)
+           server.send_message(msg)
+           server.quit()
+       except (smtplib.SMTPException, ConnectionRefusedError, OSError) as e:
+           logging.warning("Failed to send email to %s: %s", to, e)
 
 ---
+Important
 
-#### 8. Missing HTTP status codes on POST endpoints
+5. No type hints on most functions
+   Files: services/book_service.py:15,25,34, services/order_service.py:9,66,80,105,133,139,
+   utils/helpers.py:4,15,22,30
+   Principles: P7 Keep Things Simple (type hints are documentation)
 
-**`routers/books.py:8`**, **`routers/orders.py:10`**
+   get_all_books(), get_book(book_id), search_books(query), and nearly every OrderService
+   method lack parameter and return type annotations. This hurts IDE support and makes
+   the contract unclear.
 
-POST endpoints default to 200 instead of 201 Created.
+   Fix (example):
 
-```python
-# Before
-@router.post("/")
-def add_book(data: BookCreate):
-```
-
-```python
-# After
-@router.post("/", status_code=201, response_model=Book)
-def add_book(data: BookCreate):
-```
+   def get_all_books() -> list[dict[str, Any]]: ...
+   def get_book(book_id: int) -> dict[str, Any] | None: ...
+   def search_books(query: str) -> list[dict[str, Any]]: ...
 
 ---
+6. Manual session management leaks on exceptions
+   Files: services/book_service.py:6-12, services/order_service.py:10-57 (every method)
+   Principles: P2 Low Coupling
+   Pattern: Context manager for resource management
 
-#### 9. Returning raw dicts instead of Pydantic models
+   Every function does db = SessionLocal() then db.close() at the end. If any exception
+   occurs between open and close, the session leaks. The get_db() generator in database.py
+   already solves this but is never used.
 
-**`services/book_service.py:20-22`**, **`services/order_service.py:58-64,71-77`**
-Principle: **P6 Start with the Data**
+   Fix: Use the existing get_db() as a FastAPI dependency, or use a context manager:
 
-Functions return hand-built `{"id": ..., "title": ...}` dicts instead of using the Pydantic models already defined in `models/`. Loses type safety, validation, serialization control, and IDE support.
+   from contextlib import contextmanager
 
-```python
-# Before (services/book_service.py:19-22)
-result = []
-for b in books:
-    result.append({"id": b.id, "title": b.title, "author": b.author,
-                   "isbn": b.isbn, "price": b.price})
-return result
-```
+   @contextmanager
+   def get_session():
+       db = SessionLocal()
+       try:
+           yield db
+       finally:
+           db.close()
 
-```python
-# After -- use the model you already defined
-return [Book(id=b.id, title=b.title, author=b.author,
-             isbn=b.isbn, price=b.price) for b in books]
-```
-
----
-
-#### 10. Deprecated Pydantic v1 API
-
-**`services/book_service.py:7`** -- `data.dict()`
-
-Pydantic v2 renamed `.dict()` to `.model_dump()`. The old method still works but is deprecated and will be removed.
-
-```python
-# Before (Pydantic v1)
-book = BookModel(**data.dict())
-```
-
-```python
-# After (Pydantic v2)
-book = BookModel(**data.model_dump())
-```
+   # Usage
+   def get_all_books() -> list[dict]:
+       with get_session() as db:
+           books = db.query(BookModel).all()
+           return [{"id": b.id, ...} for b in books]
 
 ---
+7. Order status uses bare str — should be an Enum
+   File: models/order.py:16, services/order_service.py:89,91,111,114
+   Principles: P6 Start with the Data
+   Pattern: Enum for fixed options (Rule 1: No Type Abuse)
 
-### Suggestions
+   Status values "pending", "shipped", "delivered", "cancelled" are strewn across
+   the codebase as string literals — typo-prone and without IDE autocomplete.
 
-#### 11. if/elif chain for discount logic -- Strategy pattern
+   Fix:
 
-**`services/order_service.py:19-31`**
-Pattern: **Strategy** -- `Callable` type alias + dict mapping
+   from enum import Enum
 
-```python
-# Before (services/order_service.py:19-31)
-if quantity >= 10:
-    discount_type = "bulk"
-elif quantity >= 5:
-    discount_type = "medium"
-else:
-    discount_type = "none"
+   class OrderStatus(str, Enum):
+       PENDING = "pending"
+       SHIPPED = "shipped"
+       DELIVERED = "delivered"
+       CANCELLED = "cancelled"
 
-if discount_type == "bulk":
-    total = total * 0.8
-elif discount_type == "medium":
-    total = total * 0.9
-elif discount_type == "none":
-    pass
-```
-
-```python
-# After -- discount strategies as functions
-from typing import Callable
-
-DiscountFn = Callable[[float, int], float]
-
-def bulk_discount(total: float, quantity: int) -> float:
-    return total * 0.8
-
-def medium_discount(total: float, quantity: int) -> float:
-    return total * 0.9
-
-def no_discount(total: float, quantity: int) -> float:
-    return total
-
-def get_discount(quantity: int) -> DiscountFn:
-    if quantity >= 10:
-        return bulk_discount
-    elif quantity >= 5:
-        return medium_discount
-    return no_discount
-
-# Usage
-discount = get_discount(quantity)
-total = discount(total, quantity)
-```
+   class Order(BaseModel):
+       # ...
+       status: OrderStatus
 
 ---
+8. Errors returned as dicts instead of exceptions
+   Files: routers/books.py:21-22, routers/orders.py:14,24-25,
+   services/order_service.py:112-113
+   Principles: P3 Depend on Abstractions
+   Pattern: Custom exception classes — raise at logic layer, catch at API boundary
 
-#### 12. if/elif chain for currency formatting -- dict mapping
+   Returning {"error": "Book not found"} as a 200 response is an API anti-pattern.
+   Clients can't distinguish success from failure by HTTP status code.
 
-**`utils/helpers.py:4-12`**
-Pattern: **Registry** -- dict mapping replaces if/elif
+   Fix:
 
-```python
-# Before
-def format_price(amount, currency):
-    if currency == "USD":
-        return f"${amount:.2f}"
-    elif currency == "EUR":
-        return f"\u20ac{amount:.2f}"
-    elif currency == "GBP":
-        return f"\u00a3{amount:.2f}"
-    else:
+   # services/exceptions.py
+   class BookNotFoundError(Exception): ...
+   class OrderNotFoundError(Exception): ...
+   class InvalidOrderStateError(Exception): ...
+
+   # services/order_service.py
+   def cancel_order(self, order_id: int) -> dict:
+       ...
+       if order.status != OrderStatus.PENDING:
+           raise InvalidOrderStateError("Can only cancel pending orders")
+
+   # routers/orders.py
+   from fastapi import HTTPException
+
+   @router.delete("/{order_id}")
+   def cancel(order_id: int):
+       try:
+           return order_service.cancel_order(order_id)
+       except OrderNotFoundError:
+           raise HTTPException(status_code=404, detail="Order not found")
+       except InvalidOrderStateError as e:
+           raise HTTPException(status_code=409, detail=str(e))
+
+---
+9. utils/helpers.py is a dumping ground with mixed concerns
+   File: utils/helpers.py:1-38
+   Principles: P1 High Cohesion, P2 Low Coupling
+   Pattern: Rule 16 — Avoid generic package names
+
+   This file has formatting (format_price), DB queries (get_bestsellers,
+   generate_report), and validation (validate_isbn) — three unrelated
+   responsibilities. The name utils/helpers is a code smell per Rule 16.
+
+   Fix: Move each function to where it belongs:
+   - format_price → models/book.py or a formatting module
+   - get_bestsellers → services/book_service.py
+   - validate_isbn → models/book.py (as a Pydantic validator)
+   - generate_report → services/report_service.py
+
+---
+Suggestions
+
+10. Discount logic uses redundant if/elif — replace with dict mapping
+    File: services/order_service.py:19-31
+    Principles: P5 Separate Creation from Use
+    Pattern: Strategy pattern — dict mapping replaces if/elif
+
+    The discount code first maps quantity to a discount type string, then maps that
+    string to a multiplier — two cascaded if/elif chains.
+
+    Fix:
+
+    DISCOUNT_TIERS: list[tuple[int, float]] = [
+        (10, 0.8),   # 20% off for 10+
+        (5, 0.9),    # 10% off for 5+
+    ]
+
+    def compute_discount(total: float, quantity: int) -> float:
+        for min_qty, multiplier in DISCOUNT_TIERS:
+            if quantity >= min_qty:
+                return total * multiplier
+        return total
+
+---
+11. Magic numbers throughout
+    Files: services/order_service.py:19,21,26-27,145-150,160, utils/helpers.py:23-26
+    Principles: P7 Keep Things Simple (Rule 11: No Magic Numbers)
+
+    0.8, 0.9, 50, 25, 4.99, 9.99, 587, 10, 5, 13, 10 — all unnamed literals.
+
+    Fix: Extract into named constants or configurable attributes:
+
+    FREE_SHIPPING_THRESHOLD = 50.0
+    REDUCED_SHIPPING_THRESHOLD = 25.0
+    REDUCED_SHIPPING_COST = 4.99
+    STANDARD_SHIPPING_COST = 9.99
+    SMTP_PORT = 587
+
+---
+12. format_price if/elif chain — use dict mapping
+    File: utils/helpers.py:4-12
+    Principles: P5 Separate Creation from Use
+    Pattern: Dict mapping replaces if/elif
+
+    Fix:
+
+    CURRENCY_SYMBOLS: dict[str, str] = {
+        "USD": "$",
+        "EUR": "€",
+        "GBP": "£",
+    }
+
+    def format_price(amount: float, currency: str) -> str:
+        symbol = CURRENCY_SYMBOLS.get(currency)
+        if symbol:
+            return f"{symbol}{amount:.2f}"
         return f"{amount:.2f} {currency}"
-```
-
-```python
-# After
-CURRENCY_SYMBOLS: dict[str, str] = {
-    "USD": "$", "EUR": "\u20ac", "GBP": "\u00a3",
-}
-
-def format_price(amount: float, currency: str) -> str:
-    symbol = CURRENCY_SYMBOLS.get(currency)
-    if symbol:
-        return f"{symbol}{amount:.2f}"
-    return f"{amount:.2f} {currency}"
-```
 
 ---
+13. Inconsistent return types in book_service.py
+    File: services/book_service.py:5-12 vs 15-22
+    Principles: P1 High Cohesion
 
-#### 13. Bare string constants for order status -- use StrEnum
-
-**`services/order_service.py:38,86,89,95,111,114`**
-
-```python
-# Before -- typo-prone strings scattered across the codebase
-status="pending"
-if order.status != "pending":
-if new_status == "shipped":
-```
-
-```python
-# After
-from enum import StrEnum
-
-class OrderStatus(StrEnum):
-    PENDING = "pending"
-    SHIPPED = "shipped"
-    DELIVERED = "delivered"
-    CANCELLED = "cancelled"
-```
+    create_book() returns a Book Pydantic model, but get_all_books() returns
+    list[dict] and get_book() returns dict | None. Pick one convention —
+    preferably return Pydantic models consistently.
 
 ---
+14. Deprecated Pydantic v1 API
+    File: services/book_service.py:7
 
-#### 14. Mixed concerns in `utils/helpers.py` -- split by domain
-
-**`utils/helpers.py:1-38`**
-Principle: **P1 High Cohesion** | Rule: **#16 Avoid Generic Package Names**
-
-`helpers.py` contains formatting (`format_price`), validation (`validate_isbn`), DB queries (`get_bestsellers`), and reporting (`generate_report`). Four unrelated responsibilities. The `utils/` name is a dumping ground.
-
-**Fix:** Move `get_bestsellers` and `generate_report` into `services/`. Move `format_price` into `formatting.py`. Move `validate_isbn` into `models/book.py`.
+    data.dict() is deprecated in Pydantic v2. Use data.model_dump().
 
 ---
+15. Module-level OrderService() instantiation
+    File: routers/orders.py:7
+    Principles: P5 Separate Creation from Use
 
-#### 15. Notification side effects interleaved with business logic -- Pub/Sub
+    order_service = OrderService() is created at module import time as global
+    state. Should be created via FastAPI's Depends() for testability.
 
-**`services/order_service.py:44-49,89-100,121-125`**
-Pattern: **Pub/Sub**
+---
+Summary
 
-`_send_email` calls are scattered throughout `create_order`, `update_status`, and `cancel_order`. Each new side effect (Slack notification, analytics event, audit log) requires modifying every method.
+┌─────────────┬───────┬─────────────────────────────────────────┐
+│  Severity   │ Count │               Key Themes                │
+├─────────────┼───────┼─────────────────────────────────────────┤
+│ Critical    │ 4     │ God class, no abstractions, layer skip, │
+│             │       │ swallowed exceptions                    │
+├─────────────┼───────┼─────────────────────────────────────────┤
+│             │       │ Missing type hints, session leaks,      │
+│ Important   │ 5     │ string status, dict errors,             │
+│             │       │ dumping-ground utils                    │
+├─────────────┼───────┼─────────────────────────────────────────┤
+│             │       │ Dict mappings, magic numbers,           │
+│ Suggestions │ 6     │ inconsistent returns, deprecated API,   │
+│             │       │ global state                            │
+└─────────────┴───────┴─────────────────────────────────────────┘
 
-```python
-# After -- event-based notification
-EventHandler = Callable[[dict], None]
-subscribers: dict[str, list[EventHandler]] = {}
-
-def subscribe(event: str, handler: EventHandler) -> None:
-    subscribers.setdefault(event, []).append(handler)
-
-def post_event(event: str, data: dict) -> None:
-    for handler in subscribers.get(event, []):
-        handler(data)
-
-# In create_order:
-post_event("order.created", {"order_id": order.id, "email": customer_email})
-
-# Wire handlers in composition root:
-subscribe("order.created", send_confirmation_email)
-subscribe("order.created", log_order)
+Top 3 priorities:
+1. Introduce a DataInterface Protocol and inject it — this unblocks testability
+   for everything else
+2. Break up OrderService into focused modules (order CRUD, discounts, notifications)
+3. Add OrderStatus enum and custom exception classes to replace string errors and
+   dict error returns
 ```
-
----
-
-## Summary
-
-**3 critical** (layer skip, no DI, no resource management), **7 important** (god class, broad catch, missing types, wrong HTTP responses, missing status codes, raw dicts, deprecated API), **5 suggestions** (Strategy, Registry, StrEnum, split utils, Pub/Sub). The biggest wins would be introducing a `DataInterface` Protocol and splitting `OrderService`.

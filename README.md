@@ -74,7 +74,7 @@ The review checks:
 
 Findings are reported by severity (Critical / Important / Suggestions) with file/line references and fix snippets.
 
-**Example output:** [Full review of a test bookstore-api project](docs/example-review.md) (15 findings with before/after code). See the [color-coded version](https://mktoronto.github.io/python-clean-architecture/) on the landing page.
+**Example output:** [Full review of a test bookstore-api project](docs/example-review.md) — 4 critical, 5 important, 6 suggestions with before/after code. See the [color-coded version](https://mktoronto.github.io/python-clean-architecture/) on the landing page.
 
 ### All Commands
 
