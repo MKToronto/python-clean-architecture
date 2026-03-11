@@ -32,6 +32,20 @@
     .card h3 { font-size: 1rem; margin-bottom: 0.4rem; }
     .card p { font-size: 0.9rem; color: #555; margin: 0; }
     footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #e0e0e0; font-size: 0.85rem; color: #777; }
+    .terminal { background: #0d1117; color: #c9d1d9; border-radius: 8px; padding: 1.25rem; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 0.8rem; line-height: 1.5; overflow-x: auto; margin: 1rem 0; border: 1px solid #30363d; }
+    .terminal .prompt { color: #7ee787; }
+    .terminal .heading { color: #79c0ff; font-weight: bold; }
+    .terminal .ok { color: #7ee787; }
+    .terminal .warn { color: #d29922; }
+    .terminal .err { color: #f85149; }
+    .terminal .dim { color: #6e7681; }
+    .terminal .file { color: #d2a8ff; }
+    .terminal .principle { color: #79c0ff; }
+    .terminal .pattern { color: #ffa657; }
+    .terminal .kw { color: #ff7b72; }
+    .terminal .str { color: #a5d6ff; }
+    .terminal .fn { color: #d2a8ff; }
+    .terminal .comment { color: #6e7681; font-style: italic; }
     @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -90,6 +104,100 @@
       <li><code>/review-api-design</code> — Review REST API conventions</li>
       <li><code>/refactor-legacy</code> — Plan safe refactoring for untested code</li>
     </ul>
+
+    <h2>Example: /review-architecture</h2>
+    <p>Sample output from reviewing a fictional <code>bookstore-api/</code> project:</p>
+
+    <div class="terminal">
+<span class="prompt">$ /review-architecture bookstore-api/</span>
+
+<span class="heading">Architecture Summary</span>
+<span class="dim">──────────────────────</span>
+
+Layers
+<span class="dim">──────</span>
+API:        <span class="file">routers/books.py</span>, <span class="file">routers/orders.py</span>
+Logic:      <span class="file">services/book_service.py</span>, <span class="file">services/order_service.py</span>
+Database:   <span class="file">db/models.py</span>, <span class="file">db/database.py</span>
+Unclear:    <span class="file">utils/helpers.py</span> <span class="dim">(mixed concerns — formatting + DB queries)</span>
+
+Dependency Flows
+<span class="dim">────────────────</span>
+<span class="file">routers/books.py</span> → <span class="file">services/book_service.py</span> → <span class="file">db/database.py</span>       <span class="ok">✓</span>
+<span class="file">routers/orders.py</span> → <span class="file">db/models.py</span>                                    <span class="warn">⚠ layer skip</span>
+<span class="file">routers/orders.py</span> → <span class="file">services/order_service.py</span> → <span class="file">db/database.py</span>     <span class="ok">✓</span>
+
+<span class="heading">What Works Well</span>
+<span class="dim">──────────────────</span>
+<span class="ok">✓</span> Clean separation in <span class="file">routers/books.py</span> — calls service layer, never touches DB
+<span class="ok">✓</span> Good Pydantic model separation: <span class="fn">BookCreate</span> / <span class="fn">Book</span> in <span class="file">models/book.py</span>
+<span class="ok">✓</span> <span class="file">book_service.py</span> accepts <span class="fn">data_interface</span> parameter — proper DI
+
+<span class="heading">Findings by Severity</span>
+<span class="dim">──────────────────────</span>
+
+<span class="err">Critical</span>
+
+<span class="err">1. Layer skip — router imports DB directly</span>
+   <span class="file">routers/orders.py:3</span>
+   Principle: <span class="principle">P3 Depend on Abstractions</span>
+   Fix: Move DB access into services, pass DataInterface from router.
+
+   <span class="comment"># Before</span>
+   <span class="kw">from</span> db.models <span class="kw">import</span> OrderModel
+
+   <span class="kw">@</span>router.post(<span class="str">"/orders"</span>)
+   <span class="kw">def</span> <span class="fn">create_order</span>(data: OrderCreate):
+       order = OrderModel(**data.dict())
+       ...
+
+   <span class="comment"># After</span>
+   <span class="kw">@</span>router.post(<span class="str">"/orders"</span>, status_code=<span class="str">201</span>)
+   <span class="kw">def</span> <span class="fn">create_order</span>(data: OrderCreate):
+       <span class="kw">return</span> create_order_op(data, data_interface=db_interface)
+
+<span class="warn">Important</span>
+
+<span class="warn">2. God class — OrderService has 6 responsibilities</span>
+   <span class="file">services/order_service.py:1</span> — 280 lines
+   Principle: <span class="principle">P1 High Cohesion</span>
+   Fix: Extract <span class="fn">PaymentService</span>, <span class="fn">InventoryService</span>, <span class="fn">NotificationService</span>.
+
+<span class="warn">3. Missing type hints</span>
+   <span class="file">utils/helpers.py:12</span> — <span class="kw">def</span> <span class="fn">format_price</span>(amount, currency):
+   Fix: <span class="kw">def</span> <span class="fn">format_price</span>(amount: <span class="fn">Decimal</span>, currency: <span class="fn">str</span>) -> <span class="fn">str</span>:
+
+<span class="dim">Suggestions</span>
+
+<span class="dim">4. if/elif chain for discount logic</span>
+   <span class="file">services/order_service.py:145</span>
+   Pattern: <span class="pattern">Strategy</span> — <span class="fn">Callable</span> type alias
+
+   <span class="comment"># Before</span>
+   <span class="kw">if</span> discount_type == <span class="str">"percentage"</span>:
+       ...
+   <span class="kw">elif</span> discount_type == <span class="str">"fixed"</span>:
+       ...
+
+   <span class="comment"># After</span>
+   DiscountStrategy = <span class="fn">Callable</span>[[<span class="fn">Decimal</span>, <span class="fn">int</span>], <span class="fn">Decimal</span>]
+
+   DISCOUNTS: <span class="fn">dict</span>[<span class="fn">str</span>, DiscountStrategy] = {
+       <span class="str">"percentage"</span>: apply_percentage,
+       <span class="str">"fixed"</span>: apply_fixed,
+       <span class="str">"bogo"</span>: apply_bogo,
+   }
+   final_price = DISCOUNTS[discount_type](price, quantity)
+
+<span class="dim">5. Bare string constants for order status</span>
+   <span class="file">services/order_service.py:22</span>
+   Fix: Use <span class="fn">StrEnum</span>
+
+   <span class="kw">class</span> <span class="fn">OrderStatus</span>(<span class="fn">StrEnum</span>):
+       PENDING = <span class="str">"pending"</span>
+       SHIPPED = <span class="str">"shipped"</span>
+       DELIVERED = <span class="str">"delivered"</span>
+    </div>
 
     <h2>Links</h2>
     <ul>
