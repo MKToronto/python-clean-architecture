@@ -271,81 +271,162 @@ Layer Violations
    Multiple files
    Rule: <span class="principle">Type hints on all function parameters and return types</span>
 
-   <span class="file">services/book_service.py:15</span>   <span class="fn">get_all_books</span>()          — missing return type
-   <span class="file">services/book_service.py:25</span>   <span class="fn">get_book</span>(book_id)        — missing param + return
-   <span class="file">services/order_service.py:9</span>   <span class="fn">create_order</span>(...)        — missing all params + return
-   <span class="file">services/order_service.py:80</span>  <span class="fn">update_status</span>(...)       — missing all params + return
-   <span class="file">utils/helpers.py:4</span>            <span class="fn">format_price</span>(...)        — missing all params + return
-   <span class="file">utils/helpers.py:15</span>           <span class="fn">get_bestsellers</span>(limit)   — missing param + return
-   <span class="dim">... and 9 more functions</span>
+   File                             Function                          Missing
+   <span class="dim">───────────────────────────────  ────────────────────────────────  ─────────────────────</span>
+   <span class="file">services/book_service.py:15</span>     <span class="fn">get_all_books</span>()                  return type
+   <span class="file">services/book_service.py:25</span>     <span class="fn">get_book</span>(book_id)                param + return
+   <span class="file">services/book_service.py:34</span>     <span class="fn">search_books</span>(query)              param + return
+   <span class="file">services/order_service.py:9</span>     <span class="fn">create_order</span>(self, ...)          all params + return
+   <span class="file">services/order_service.py:66</span>    <span class="fn">get_order</span>(self, order_id)        param + return
+   <span class="file">services/order_service.py:80</span>    <span class="fn">update_status</span>(self, ...)         all params + return
+   <span class="file">services/order_service.py:105</span>   <span class="fn">cancel_order</span>(self, order_id)     param + return
+   <span class="file">services/order_service.py:133</span>   <span class="fn">get_order_history</span>(self, ...)     param + return
+   <span class="file">services/order_service.py:139</span>   <span class="fn">calculate_shipping</span>(self, ...)    param + return
+   <span class="file">services/order_service.py:154</span>   <span class="fn">_send_email</span>(self, ...)           all params + return
+   <span class="file">utils/helpers.py:4</span>              <span class="fn">format_price</span>(amount, currency)   all params + return
+   <span class="file">utils/helpers.py:15</span>             <span class="fn">get_bestsellers</span>(limit)           param + return
+   <span class="file">utils/helpers.py:22</span>             <span class="fn">validate_isbn</span>(isbn)              param + return
+   <span class="file">utils/helpers.py:30</span>             <span class="fn">generate_report</span>()                return
 
 <span class="warn">7. Error responses return 200 with error body instead of HTTPException</span>
    <span class="file">routers/books.py:21-22</span>, <span class="file">routers/orders.py:13-14,24-25</span>
+   Principle: <span class="principle">P7 Keep Things Simple</span> (HTTP semantics exist for this)
+
+   Returning {<span class="str">"error"</span>: <span class="str">"Book not found"</span>} sends HTTP 200 with an error
+   body. Clients cannot distinguish success from failure by status code.
 
    <span class="comment"># Before (routers/books.py:20-23) — returns HTTP 200 with error!</span>
+   book = get_book(book_id)
    <span class="kw">if not</span> book:
        <span class="kw">return</span> {<span class="str">"error"</span>: <span class="str">"Book not found"</span>}
+   <span class="kw">return</span> book
 
-   <span class="comment"># After — proper HTTP semantics</span>
+   <span class="comment"># After — proper HTTP error</span>
+   <span class="kw">from</span> fastapi <span class="kw">import</span> HTTPException
+
+   book = get_book(book_id)
    <span class="kw">if not</span> book:
        <span class="kw">raise</span> HTTPException(status_code=<span class="str">404</span>, detail=<span class="str">"Book not found"</span>)
+   <span class="kw">return</span> book
 
-<span class="warn">8. Returning raw dicts instead of Pydantic models</span>
-   <span class="file">services/book_service.py:20-22</span>, <span class="file">services/order_service.py:58-64</span>
+<span class="warn">8. Missing HTTP status codes on POST endpoints</span>
+   <span class="file">routers/books.py:8</span>, <span class="file">routers/orders.py:10</span>
+
+   POST endpoints default to 200 instead of 201 Created.
+
+   <span class="comment"># Before</span>
+   <span class="kw">@</span>router.post(<span class="str">"/"</span>)
+   <span class="kw">def</span> <span class="fn">add_book</span>(data: <span class="fn">BookCreate</span>):
+
+   <span class="comment"># After</span>
+   <span class="kw">@</span>router.post(<span class="str">"/"</span>, status_code=<span class="str">201</span>, response_model=<span class="fn">Book</span>)
+   <span class="kw">def</span> <span class="fn">add_book</span>(data: <span class="fn">BookCreate</span>):
+
+<span class="warn">9. Returning raw dicts instead of Pydantic models</span>
+   <span class="file">services/book_service.py:20-22</span>, <span class="file">services/order_service.py:58-64,71-77</span>
    Principle: <span class="principle">P6 Start with the Data</span>
 
    Functions return hand-built {<span class="str">"id"</span>: ..., <span class="str">"title"</span>: ...} dicts instead
    of using the Pydantic models already defined in <span class="file">models/</span>. Loses type
-   safety, validation, and IDE support.
+   safety, validation, serialization control, and IDE support.
 
-   <span class="comment"># Before</span>
-   result.append({<span class="str">"id"</span>: b.id, <span class="str">"title"</span>: b.title, <span class="str">"author"</span>: b.author, ...})
+   <span class="comment"># Before (services/book_service.py:19-22)</span>
+   result = []
+   <span class="kw">for</span> b <span class="kw">in</span> books:
+       result.append({<span class="str">"id"</span>: b.id, <span class="str">"title"</span>: b.title, <span class="str">"author"</span>: b.author,
+                      <span class="str">"isbn"</span>: b.isbn, <span class="str">"price"</span>: b.price})
+   <span class="kw">return</span> result
 
    <span class="comment"># After — use the model you already defined</span>
    <span class="kw">return</span> [Book(id=b.id, title=b.title, author=b.author,
                 isbn=b.isbn, price=b.price) <span class="kw">for</span> b <span class="kw">in</span> books]
 
+<span class="warn">10. Deprecated Pydantic v1 API</span>
+    <span class="file">services/book_service.py:7</span> — data.dict()
+
+    Pydantic v2 renamed <span class="fn">.dict</span>() to <span class="fn">.model_dump</span>(). The old method
+    still works but is deprecated and will be removed.
+
+    <span class="comment"># Before (Pydantic v1)</span>
+    book = BookModel(**data.dict())
+
+    <span class="comment"># After (Pydantic v2)</span>
+    book = BookModel(**data.model_dump())
+
+<span class="dim">───</span>
 <span class="dim">Suggestions</span>
 
-<span class="dim">9. if/elif chain for discount logic — Strategy pattern</span>
-   <span class="file">services/order_service.py:19-31</span>
-   Pattern: <span class="pattern">Strategy</span> — <span class="fn">Callable</span> type alias + dict mapping
+<span class="dim">11. if/elif chain for discount logic — Strategy pattern</span>
+    <span class="file">services/order_service.py:19-31</span>
+    Pattern: <span class="pattern">Strategy</span> — <span class="fn">Callable</span> type alias + dict mapping
 
-   <span class="comment"># Before</span>
-   <span class="kw">if</span> discount_type == <span class="str">"bulk"</span>:
-       total = total * <span class="str">0.8</span>
-   <span class="kw">elif</span> discount_type == <span class="str">"medium"</span>:
-       total = total * <span class="str">0.9</span>
+    <span class="comment"># Before (services/order_service.py:19-31)</span>
+    <span class="kw">if</span> quantity >= <span class="str">10</span>:
+        discount_type = <span class="str">"bulk"</span>
+    <span class="kw">elif</span> quantity >= <span class="str">5</span>:
+        discount_type = <span class="str">"medium"</span>
+    <span class="kw">else</span>:
+        discount_type = <span class="str">"none"</span>
 
-   <span class="comment"># After</span>
-   DiscountFn = <span class="fn">Callable</span>[[<span class="fn">float</span>, <span class="fn">int</span>], <span class="fn">float</span>]
+    <span class="kw">if</span> discount_type == <span class="str">"bulk"</span>:
+        total = total * <span class="str">0.8</span>
+    <span class="kw">elif</span> discount_type == <span class="str">"medium"</span>:
+        total = total * <span class="str">0.9</span>
+    <span class="kw">elif</span> discount_type == <span class="str">"none"</span>:
+        <span class="kw">pass</span>
 
-   <span class="kw">def</span> <span class="fn">bulk_discount</span>(total: <span class="fn">float</span>, qty: <span class="fn">int</span>) -> <span class="fn">float</span>:
-       <span class="kw">return</span> total * <span class="str">0.8</span>
+    <span class="comment"># After — discount strategies as functions</span>
+    <span class="kw">from</span> typing <span class="kw">import</span> Callable
 
-   <span class="kw">def</span> <span class="fn">get_discount</span>(quantity: <span class="fn">int</span>) -> DiscountFn:
-       <span class="kw">if</span> quantity >= <span class="str">10</span>: <span class="kw">return</span> bulk_discount
-       <span class="kw">if</span> quantity >= <span class="str">5</span>:  <span class="kw">return</span> medium_discount
-       <span class="kw">return</span> no_discount
+    DiscountFn = <span class="fn">Callable</span>[[<span class="fn">float</span>, <span class="fn">int</span>], <span class="fn">float</span>]
 
-   total = get_discount(quantity)(total, quantity)
+    <span class="kw">def</span> <span class="fn">bulk_discount</span>(total: <span class="fn">float</span>, quantity: <span class="fn">int</span>) -> <span class="fn">float</span>:
+        <span class="kw">return</span> total * <span class="str">0.8</span>
 
-<span class="dim">10. if/elif chain for currency formatting — dict mapping</span>
+    <span class="kw">def</span> <span class="fn">medium_discount</span>(total: <span class="fn">float</span>, quantity: <span class="fn">int</span>) -> <span class="fn">float</span>:
+        <span class="kw">return</span> total * <span class="str">0.9</span>
+
+    <span class="kw">def</span> <span class="fn">no_discount</span>(total: <span class="fn">float</span>, quantity: <span class="fn">int</span>) -> <span class="fn">float</span>:
+        <span class="kw">return</span> total
+
+    <span class="kw">def</span> <span class="fn">get_discount</span>(quantity: <span class="fn">int</span>) -> DiscountFn:
+        <span class="kw">if</span> quantity >= <span class="str">10</span>:
+            <span class="kw">return</span> bulk_discount
+        <span class="kw">elif</span> quantity >= <span class="str">5</span>:
+            <span class="kw">return</span> medium_discount
+        <span class="kw">return</span> no_discount
+
+    <span class="comment"># Usage</span>
+    discount = get_discount(quantity)
+    total = discount(total, quantity)
+
+<span class="dim">12. if/elif chain for currency formatting — dict mapping</span>
     <span class="file">utils/helpers.py:4-12</span>
     Pattern: <span class="pattern">Registry</span> — dict mapping replaces if/elif
 
     <span class="comment"># Before</span>
-    <span class="kw">if</span> currency == <span class="str">"USD"</span>: <span class="kw">return</span> f<span class="str">"${amount:.2f}"</span>
-    <span class="kw">elif</span> currency == <span class="str">"EUR"</span>: <span class="kw">return</span> f<span class="str">"€{amount:.2f}"</span>
+    <span class="kw">def</span> <span class="fn">format_price</span>(amount, currency):
+        <span class="kw">if</span> currency == <span class="str">"USD"</span>:
+            <span class="kw">return</span> f<span class="str">"${amount:.2f}"</span>
+        <span class="kw">elif</span> currency == <span class="str">"EUR"</span>:
+            <span class="kw">return</span> f<span class="str">"€{amount:.2f}"</span>
+        <span class="kw">elif</span> currency == <span class="str">"GBP"</span>:
+            <span class="kw">return</span> f<span class="str">"£{amount:.2f}"</span>
+        <span class="kw">else</span>:
+            <span class="kw">return</span> f<span class="str">"{amount:.2f} {currency}"</span>
 
     <span class="comment"># After</span>
-    SYMBOLS: <span class="fn">dict</span>[<span class="fn">str</span>, <span class="fn">str</span>] = {<span class="str">"USD"</span>: <span class="str">"$"</span>, <span class="str">"EUR"</span>: <span class="str">"€"</span>, <span class="str">"GBP"</span>: <span class="str">"£"</span>}
+    CURRENCY_SYMBOLS: <span class="fn">dict</span>[<span class="fn">str</span>, <span class="fn">str</span>] = {
+        <span class="str">"USD"</span>: <span class="str">"$"</span>, <span class="str">"EUR"</span>: <span class="str">"€"</span>, <span class="str">"GBP"</span>: <span class="str">"£"</span>,
+    }
 
     <span class="kw">def</span> <span class="fn">format_price</span>(amount: <span class="fn">float</span>, currency: <span class="fn">str</span>) -> <span class="fn">str</span>:
-        symbol = SYMBOLS.get(currency)
-        <span class="kw">return</span> f<span class="str">"{symbol}{amount:.2f}"</span> <span class="kw">if</span> symbol <span class="kw">else</span> f<span class="str">"{amount:.2f} {currency}"</span>
+        symbol = CURRENCY_SYMBOLS.get(currency)
+        <span class="kw">if</span> symbol:
+            <span class="kw">return</span> f<span class="str">"{symbol}{amount:.2f}"</span>
+        <span class="kw">return</span> f<span class="str">"{amount:.2f} {currency}"</span>
 
-<span class="dim">11. Bare string constants for order status — use StrEnum</span>
+<span class="dim">13. Bare string constants for order status — use StrEnum</span>
     <span class="file">services/order_service.py:38,86,89,95,111,114</span>
 
     <span class="comment"># Before — typo-prone strings scattered across the codebase</span>
@@ -354,40 +435,58 @@ Layer Violations
     <span class="kw">if</span> new_status == <span class="str">"shipped"</span>:
 
     <span class="comment"># After</span>
+    <span class="kw">from</span> enum <span class="kw">import</span> StrEnum
+
     <span class="kw">class</span> <span class="fn">OrderStatus</span>(<span class="fn">StrEnum</span>):
         PENDING = <span class="str">"pending"</span>
         SHIPPED = <span class="str">"shipped"</span>
         DELIVERED = <span class="str">"delivered"</span>
         CANCELLED = <span class="str">"cancelled"</span>
 
-<span class="dim">12. Mixed concerns in utils/helpers.py — split by domain</span>
+<span class="dim">14. Mixed concerns in utils/helpers.py — split by domain</span>
     <span class="file">utils/helpers.py:1-38</span>
     Principle: <span class="principle">P1 High Cohesion</span> | Rule: <span class="principle">#16 Avoid Generic Package Names</span>
 
-    Contains formatting (<span class="fn">format_price</span>), validation (<span class="fn">validate_isbn</span>),
-    DB queries (<span class="fn">get_bestsellers</span>), and reporting (<span class="fn">generate_report</span>).
-    Four unrelated responsibilities. The <span class="file">utils/</span> name is a dumping ground.
+    <span class="file">helpers.py</span> contains formatting (<span class="fn">format_price</span>), validation (<span class="fn">validate_isbn</span>),
+    DB queries (<span class="fn">get_bestsellers</span>), and reporting (<span class="fn">generate_report</span>). These are
+    four unrelated responsibilities. The <span class="file">utils/</span> package name is a dumping ground.
 
-    Fix: Move <span class="fn">get_bestsellers</span>/<span class="fn">generate_report</span> into <span class="file">services/</span>.
-    Move <span class="fn">format_price</span> into <span class="file">formatting.py</span>. Move <span class="fn">validate_isbn</span> into <span class="file">models/</span>.
+    Fix: Move <span class="fn">get_bestsellers</span> and <span class="fn">generate_report</span> into <span class="file">services/</span>.
+    Move <span class="fn">format_price</span> into <span class="file">models/</span> or a <span class="file">formatting.py</span> module.
+    Move <span class="fn">validate_isbn</span> into <span class="file">models/book.py</span> or a <span class="file">validators.py</span> module.
 
-<span class="dim">13. Notification side effects interleaved with logic — Pub/Sub pattern</span>
+<span class="dim">15. Notification side effects interleaved with business logic — Pub/Sub</span>
     <span class="file">services/order_service.py:44-49,89-100,121-125</span>
     Pattern: <span class="pattern">Pub/Sub</span>
 
-    <span class="fn">_send_email</span> calls scattered through <span class="fn">create_order</span>, <span class="fn">update_status</span>,
-    and <span class="fn">cancel_order</span>. Each new side effect (Slack, analytics, audit)
-    requires modifying every method.
+    <span class="fn">_send_email</span> calls are scattered throughout <span class="fn">create_order</span>, <span class="fn">update_status</span>,
+    and <span class="fn">cancel_order</span>. Each new side effect (Slack notification, analytics
+    event, audit log) requires modifying every method.
 
-    <span class="comment"># After — event-based</span>
-    post_event(<span class="str">"order.created"</span>, {<span class="str">"order_id"</span>: order.id, <span class="str">"email"</span>: email})
+    <span class="comment"># After — event-based notification</span>
+    EventHandler = <span class="fn">Callable</span>[[<span class="fn">dict</span>], <span class="fn">None</span>]
+    subscribers: <span class="fn">dict</span>[<span class="fn">str</span>, <span class="fn">list</span>[EventHandler]] = {}
 
-    <span class="comment"># Wire in composition root:</span>
+    <span class="kw">def</span> <span class="fn">subscribe</span>(event: <span class="fn">str</span>, handler: EventHandler) -> <span class="fn">None</span>:
+        subscribers.setdefault(event, []).append(handler)
+
+    <span class="kw">def</span> <span class="fn">post_event</span>(event: <span class="fn">str</span>, data: <span class="fn">dict</span>) -> <span class="fn">None</span>:
+        <span class="kw">for</span> handler <span class="kw">in</span> subscribers.get(event, []):
+            handler(data)
+
+    <span class="comment"># In create_order:</span>
+    post_event(<span class="str">"order.created"</span>, {<span class="str">"order_id"</span>: order.id, <span class="str">"email"</span>: customer_email})
+
+    <span class="comment"># Wire handlers in composition root:</span>
     subscribe(<span class="str">"order.created"</span>, send_confirmation_email)
     subscribe(<span class="str">"order.created"</span>, log_order)
 
-<span class="heading">Summary</span>: 3 critical, 5 important, 5 suggestions. Biggest wins:
-introduce a <span class="fn">DataInterface</span> Protocol and split <span class="fn">OrderService</span>.
+<span class="dim">───</span>
+<span class="heading">Summary</span>: 3 critical (layer skip, no DI, no resource management),
+7 important (god class, broad catch, missing types, wrong HTTP responses,
+missing status codes, raw dicts, deprecated API), 5 suggestions (Strategy,
+Registry, StrEnum, split utils, Pub/Sub). The biggest wins would be
+introducing a <span class="fn">DataInterface</span> Protocol and splitting <span class="fn">OrderService</span>.
     </div>
 
     <h2>Links</h2>

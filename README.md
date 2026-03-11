@@ -239,81 +239,160 @@ Important
    Multiple files
    Rule: Type hints on all function parameters and return types
 
-   services/book_service.py:15   get_all_books()          -- missing return type
-   services/book_service.py:25   get_book(book_id)        -- missing param + return
-   services/order_service.py:9   create_order(...)        -- missing all params + return
-   services/order_service.py:80  update_status(...)       -- missing all params + return
-   utils/helpers.py:4            format_price(...)        -- missing all params + return
-   utils/helpers.py:15           get_bestsellers(limit)   -- missing param + return
-   ... and 9 more functions
+   File                            Function                         Missing
+   ------------------------------  -------------------------------  ---------------------
+   services/book_service.py:15     get_all_books()                  return type
+   services/book_service.py:25     get_book(book_id)                param + return
+   services/book_service.py:34     search_books(query)              param + return
+   services/order_service.py:9     create_order(self, ...)          all params + return
+   services/order_service.py:66    get_order(self, order_id)        param + return
+   services/order_service.py:80    update_status(self, ...)         all params + return
+   services/order_service.py:105   cancel_order(self, order_id)     param + return
+   services/order_service.py:133   get_order_history(self, ...)     param + return
+   services/order_service.py:139   calculate_shipping(self, ...)    param + return
+   services/order_service.py:154   _send_email(self, ...)           all params + return
+   utils/helpers.py:4              format_price(amount, currency)   all params + return
+   utils/helpers.py:15             get_bestsellers(limit)           param + return
+   utils/helpers.py:22             validate_isbn(isbn)              param + return
+   utils/helpers.py:30             generate_report()                return
 
 7. Error responses return 200 with error body instead of HTTPException
    routers/books.py:21-22, routers/orders.py:13-14,24-25
 
+   Returning {"error": "Book not found"} sends HTTP 200 with an error
+   body. Clients cannot distinguish success from failure by status code.
+
    # Before (routers/books.py:20-23) -- returns HTTP 200 with error!
+   book = get_book(book_id)
    if not book:
        return {"error": "Book not found"}
+   return book
 
    # After -- proper HTTP semantics
+   from fastapi import HTTPException
+
+   book = get_book(book_id)
    if not book:
        raise HTTPException(status_code=404, detail="Book not found")
+   return book
 
-8. Returning raw dicts instead of Pydantic models
-   services/book_service.py:20-22, services/order_service.py:58-64
+8. Missing HTTP status codes on POST endpoints
+   routers/books.py:8, routers/orders.py:10
+
+   POST endpoints default to 200 instead of 201 Created.
+
+   # Before
+   @router.post("/")
+   def add_book(data: BookCreate):
+
+   # After
+   @router.post("/", status_code=201, response_model=Book)
+   def add_book(data: BookCreate):
+
+9. Returning raw dicts instead of Pydantic models
+   services/book_service.py:20-22, services/order_service.py:58-64,71-77
    Principle: P6 Start with the Data
 
    Functions return hand-built {"id": ..., "title": ...} dicts instead
    of using the Pydantic models already defined in models/. Loses type
-   safety, validation, and IDE support.
+   safety, validation, serialization control, and IDE support.
 
-   # Before
-   result.append({"id": b.id, "title": b.title, "author": b.author, ...})
+   # Before (services/book_service.py:19-22)
+   result = []
+   for b in books:
+       result.append({"id": b.id, "title": b.title, "author": b.author,
+                      "isbn": b.isbn, "price": b.price})
+   return result
 
    # After -- use the model you already defined
    return [Book(id=b.id, title=b.title, author=b.author,
                 isbn=b.isbn, price=b.price) for b in books]
 
+10. Deprecated Pydantic v1 API
+    services/book_service.py:7 -- data.dict()
+
+    Pydantic v2 renamed .dict() to .model_dump(). The old method
+    still works but is deprecated and will be removed.
+
+    # Before (Pydantic v1)
+    book = BookModel(**data.dict())
+
+    # After (Pydantic v2)
+    book = BookModel(**data.model_dump())
+
 Suggestions
 
-9. if/elif chain for discount logic -- Strategy pattern
-   services/order_service.py:19-31
-   Pattern: Strategy -- Callable type alias + dict mapping
+11. if/elif chain for discount logic -- Strategy pattern
+    services/order_service.py:19-31
+    Pattern: Strategy -- Callable type alias + dict mapping
 
-   # Before
-   if discount_type == "bulk":
-       total = total * 0.8
-   elif discount_type == "medium":
-       total = total * 0.9
+    # Before (services/order_service.py:19-31)
+    if quantity >= 10:
+        discount_type = "bulk"
+    elif quantity >= 5:
+        discount_type = "medium"
+    else:
+        discount_type = "none"
 
-   # After
-   DiscountFn = Callable[[float, int], float]
+    if discount_type == "bulk":
+        total = total * 0.8
+    elif discount_type == "medium":
+        total = total * 0.9
+    elif discount_type == "none":
+        pass
 
-   def bulk_discount(total: float, qty: int) -> float:
-       return total * 0.8
+    # After -- discount strategies as functions
+    from typing import Callable
 
-   def get_discount(quantity: int) -> DiscountFn:
-       if quantity >= 10: return bulk_discount
-       if quantity >= 5:  return medium_discount
-       return no_discount
+    DiscountFn = Callable[[float, int], float]
 
-   total = get_discount(quantity)(total, quantity)
+    def bulk_discount(total: float, quantity: int) -> float:
+        return total * 0.8
 
-10. if/elif chain for currency formatting -- dict mapping
+    def medium_discount(total: float, quantity: int) -> float:
+        return total * 0.9
+
+    def no_discount(total: float, quantity: int) -> float:
+        return total
+
+    def get_discount(quantity: int) -> DiscountFn:
+        if quantity >= 10:
+            return bulk_discount
+        elif quantity >= 5:
+            return medium_discount
+        return no_discount
+
+    # Usage
+    discount = get_discount(quantity)
+    total = discount(total, quantity)
+
+12. if/elif chain for currency formatting -- dict mapping
     utils/helpers.py:4-12
     Pattern: Registry -- dict mapping replaces if/elif
 
     # Before
-    if currency == "USD": return f"${amount:.2f}"
-    elif currency == "EUR": return f"E{amount:.2f}"
+    def format_price(amount, currency):
+        if currency == "USD":
+            return f"${amount:.2f}"
+        elif currency == "EUR":
+            return f"E{amount:.2f}"
+        elif currency == "GBP":
+            return f"L{amount:.2f}"
+        else:
+            return f"{amount:.2f} {currency}"
 
     # After
-    SYMBOLS: dict[str, str] = {"USD": "$", "EUR": "E", "GBP": "L"}
+    CURRENCY_SYMBOLS: dict[str, str] = {
+        "USD": "$", "EUR": "E", "GBP": "L",
+    }
 
     def format_price(amount: float, currency: str) -> str:
-        symbol = SYMBOLS.get(currency)
-        return f"{symbol}{amount:.2f}" if symbol else f"{amount:.2f} {currency}"
+        symbol = CURRENCY_SYMBOLS.get(currency)
+        if symbol:
+            return f"{symbol}{amount:.2f}"
+        return f"{amount:.2f} {currency}"
 
-11. Bare string constants for order status -- use StrEnum
+13. Bare string constants for order status -- use StrEnum
     services/order_service.py:38,86,89,95,111,114
 
     # Before -- typo-prone strings scattered across the codebase
@@ -328,7 +407,7 @@ Suggestions
         DELIVERED = "delivered"
         CANCELLED = "cancelled"
 
-12. Mixed concerns in utils/helpers.py -- split by domain
+14. Mixed concerns in utils/helpers.py -- split by domain
     utils/helpers.py:1-38
     Principle: P1 High Cohesion | Rule: #16 Avoid Generic Package Names
 
@@ -339,23 +418,38 @@ Suggestions
     Fix: Move get_bestsellers/generate_report into services/.
     Move format_price into formatting.py. Move validate_isbn into models/.
 
-13. Notification side effects interleaved with logic -- Pub/Sub pattern
+15. Notification side effects interleaved with business logic -- Pub/Sub
     services/order_service.py:44-49,89-100,121-125
     Pattern: Pub/Sub
 
-    _send_email calls scattered through create_order, update_status,
-    and cancel_order. Each new side effect (Slack, analytics, audit)
-    requires modifying every method.
+    _send_email calls are scattered throughout create_order, update_status,
+    and cancel_order. Each new side effect (Slack notification, analytics
+    event, audit log) requires modifying every method.
 
-    # After -- event-based
-    post_event("order.created", {"order_id": order.id, "email": email})
+    # After -- event-based notification
+    EventHandler = Callable[[dict], None]
+    subscribers: dict[str, list[EventHandler]] = {}
 
-    # Wire in composition root:
+    def subscribe(event: str, handler: EventHandler) -> None:
+        subscribers.setdefault(event, []).append(handler)
+
+    def post_event(event: str, data: dict) -> None:
+        for handler in subscribers.get(event, []):
+            handler(data)
+
+    # In create_order:
+    post_event("order.created", {"order_id": order.id, "email": customer_email})
+
+    # Wire handlers in composition root:
     subscribe("order.created", send_confirmation_email)
     subscribe("order.created", log_order)
 
-Summary: 3 critical, 5 important, 5 suggestions. Biggest wins:
-introduce a DataInterface Protocol and split OrderService.
+---
+Summary: 3 critical (layer skip, no DI, no resource management),
+7 important (god class, broad catch, missing types, wrong HTTP responses,
+missing status codes, raw dicts, deprecated API), 5 suggestions (Strategy,
+Registry, StrEnum, split utils, Pub/Sub). The biggest wins would be
+introducing a DataInterface Protocol and splitting OrderService.
 ```
 
 ### All Commands
