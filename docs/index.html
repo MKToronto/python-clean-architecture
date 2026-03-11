@@ -3,14 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>python-clean-architecture — Claude Code Plugin</title>
-  <meta name="description" content="Claude Code plugin to scaffold, review, and refactor Python projects with clean code and architecture. 25 Pythonic design patterns and 7 design principles inspired by Arjan Codes.">
-  <meta name="keywords" content="Claude Code, Claude Code plugin, Python, clean architecture, FastAPI, design patterns, Pythonic, Arjan Codes, code review, dependency injection, Protocol">
-  <meta property="og:title" content="python-clean-architecture — Claude Code Plugin">
-  <meta property="og:description" content="Claude Code plugin to scaffold, review, and refactor Python projects with clean code and architecture. 25 Pythonic design patterns inspired by Arjan Codes.">
+  <title>Python Clean Architecture — Claude Code Plugin</title>
+  <meta name="description" content="Claude Code plugin for Python clean architecture. Scaffold, review, and refactor Python/FastAPI projects with 25 Pythonic design patterns, 7 design principles, and Protocol-based dependency injection. Inspired by Arjan Codes.">
+  <meta name="keywords" content="Claude Code, Claude Code plugin, Claude plugin, Python, Python clean architecture, clean architecture, FastAPI, design patterns, Pythonic, Pythonic patterns, Arjan Codes, code review, architecture review, dependency injection, Protocol, refactoring, code quality, SOLID, DI">
+  <meta property="og:title" content="Python Clean Architecture — Claude Code Plugin">
+  <meta property="og:description" content="Claude Code plugin for Python clean architecture. Scaffold, review, and refactor Python/FastAPI projects with 25 Pythonic design patterns and 7 design principles.">
   <meta property="og:url" content="https://github.com/MKToronto/python-clean-architecture">
   <meta property="og:type" content="website">
   <link rel="canonical" href="https://mktoronto.github.io/python-clean-architecture/">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "python-clean-architecture",
+    "description": "Claude Code plugin for Python clean architecture. Scaffold, review, and refactor Python/FastAPI projects with 25 Pythonic design patterns and 7 design principles.",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any",
+    "url": "https://github.com/MKToronto/python-clean-architecture",
+    "author": { "@type": "Person", "name": "MKToronto" },
+    "license": "https://opensource.org/licenses/MIT",
+    "keywords": "Claude Code, Claude Code plugin, Python, clean architecture, FastAPI, design patterns"
+  }
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a2e; background: #f8f9fa; }
@@ -25,7 +39,7 @@
     pre code { background: none; padding: 0; color: inherit; }
     a { color: #2563eb; text-decoration: none; }
     a:hover { text-decoration: underline; }
-    .badge { display: inline-block; background: #2563eb; color: #fff; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.85rem; margin-right: 0.3rem; margin-bottom: 0.3rem; }
+    .tags { font-size: 0.95rem; color: #777; margin-bottom: 1rem; }
     .install { background: #f0f7ff; border: 1px solid #c0d8f0; border-radius: 6px; padding: 1rem 1.25rem; margin: 1rem 0; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
     .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 1rem; }
@@ -54,11 +68,7 @@
     <h1>python-clean-architecture</h1>
     <p class="subtitle">A Claude Code plugin to scaffold, review, and refactor Python/FastAPI projects with clean architecture.</p>
 
-    <span class="badge">Claude Code</span>
-    <span class="badge">Python</span>
-    <span class="badge">FastAPI</span>
-    <span class="badge">Clean Architecture</span>
-    <span class="badge">Design Patterns</span>
+    <p class="tags">Claude Code &middot; Python &middot; FastAPI &middot; Clean Architecture &middot; Design Patterns</p>
 
     <h2>Install</h2>
     <div class="install">
@@ -105,7 +115,7 @@
       <li><code>/refactor-legacy</code> — Plan safe refactoring for untested code</li>
     </ul>
 
-    <h2>Example: /review-architecture</h2>
+    <h2 id="example">Example: /review-architecture</h2>
     <p>Output from reviewing a test bookstore-api project:</p>
 
     <div class="terminal">

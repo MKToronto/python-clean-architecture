@@ -221,7 +221,7 @@ Each layer depends only on the layer below. The router is the composition root w
 
 ## Example Output
 
-See the [full example review](https://mktoronto.github.io/python-clean-architecture/) — a color-coded `/review-architecture` run against a test bookstore-api project (15 findings with before/after code).
+See the [full example review](https://mktoronto.github.io/python-clean-architecture/#example) — a color-coded `/review-architecture` run against a test bookstore-api project (15 findings with before/after code).
 
 ## Also available for
 
