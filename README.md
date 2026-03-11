@@ -214,81 +214,63 @@ class OrderStatus(StrEnum):
 
 ## What's Inside
 
-```
+```text
 python-clean-architecture/
 ├── .claude-plugin/
-│   ├── plugin.json                         Plugin manifest
-│   └── marketplace.json                    Marketplace catalog
-├── README.md                               This file
-├── LICENSE                                 MIT license
+│   ├── plugin.json
+│   └── marketplace.json
+├── README.md
+├── LICENSE
 ├── commands/
-│   ├── review-architecture.md              Full architecture review
-│   ├── review-api-design.md                Review REST API conventions
-│   ├── check-quality.md                    Quick 22-rule quality check
-│   ├── suggest-patterns.md                 Recommend Pythonic patterns
-│   ├── decouple.md                         Find coupling, suggest DI
-│   ├── make-pythonic.md                    Refactor to Pythonic patterns
-│   ├── extract-god-class.md                Split god classes
-│   ├── scaffold-api.md                     Generate FastAPI project
-│   ├── scaffold-tests.md                   Generate stub-based tests
-│   └── add-endpoint.md                     Scaffold endpoint across layers
-└── skills/
-    └── clean-architecture/
-        ├── SKILL.md                        Core skill (loaded when triggered)
-        ├── references/
-        │   ├── design-principles.md        7 principles with refactoring recipes
-        │   ├── layered-architecture.md     3-layer FastAPI guide with full code
-        │   ├── testable-api.md             Stub-based testing strategy
-        │   ├── testing-advanced.md         Pytest, property-based, stateful testing
-        │   ├── rest-api-design.md          HTTP methods, status codes, OpenAPI
-        │   ├── code-quality.md             22 rules + code review checklist
-        │   ├── classes-and-dataclasses.md  Classes vs dataclasses decision guide
-        │   ├── function-design.md          Pure functions, closures, partial, HOFs
-        │   ├── data-structures.md          Choosing the right data structure
-        │   ├── error-handling.md           Custom exceptions, context managers
-        │   ├── monadic-error-handling.md   Railway-oriented Result types
-        │   ├── types-and-type-hints.md     Python's type system, Callable types
-        │   ├── project-organization.md     Modules, packages, folder structure
-        │   ├── context-managers.md         __enter__/__exit__, @contextmanager
-        │   ├── decorators.md               Retry, logging, timing, parameterized
-        │   ├── async-patterns.md           Async/await, gather, TaskGroup
-        │   ├── pydantic-validation.md      Pydantic v2 validators, ConfigDict
-        │   ├── pattern-matching.md         match/case structural patterns
-        │   ├── grasp-principles.md         GRASP: 9 principles for responsibility assignment
-        │   ├── domain-driven-design.md     DDD: domain models, ubiquitous language
-        │   ├── pythonic-patterns.md        Quick reference for all 25 patterns
-        │   └── patterns/
-        │       ├── strategy.md             Full OOP → functional progression
-        │       ├── abstract-factory.md     Tuples of functions + partial
-        │       ├── bridge.md               Bound methods, when to stop
-        │       ├── command.md              Undo closures, batch commands
-        │       ├── notification.md         Observer → Mediator → Pub/Sub
-        │       ├── registry.md             Dict mapping, importlib plugins
-        │       ├── template-method.md      Free function + Protocol
-        │       ├── pipeline.md             Chain of Responsibility, compose
-        │       ├── functional.md           Callback, Wrapper, Builder
-        │       ├── value-objects.md        Validated domain primitives
-        │       ├── event-sourcing.md       Immutable events, projections
-        │       ├── cqrs.md                 Separate read/write models
-        │       ├── builder.md              Fluent API, frozen product
-        │       ├── unit-of-work.md         Transaction context managers
-        │       ├── singleton.md            Module-level instance, metaclass
-        │       ├── state.md                Protocol-based state objects
-        │       ├── adapter.md              Composition + partial adaptation
-        │       ├── facade.md               Simplified subsystem interface
-        │       ├── repository.md            Separating storage from access
-        │       ├── fluent-interface.md     Method chaining, domain verbs
-        │       ├── retry.md                Exponential backoff decorator
-        │       ├── lazy-loading.md         cache, cached_property, generators
-        │       └── plugin-architecture.md  Config-driven, importlib discovery
-        └── examples/
-            └── fastapi-hotel-api/          Complete working FastAPI project
-                ├── main.py
-                ├── models/             Pydantic models + DataInterface Protocol
-                ├── operations/         Business logic (accepts Protocol)
-                ├── routers/            API endpoints (composition root)
-                └── db/                 SQLAlchemy + generic DBInterface
-
+│   ├── review-architecture.md
+│   ├── review-api-design.md
+│   ├── check-quality.md
+│   ├── suggest-patterns.md
+│   ├── decouple.md
+│   ├── make-pythonic.md
+│   ├── extract-god-class.md
+│   ├── scaffold-api.md
+│   ├── scaffold-tests.md
+│   └── add-endpoint.md
+└── skills/clean-architecture/
+    ├── SKILL.md
+    ├── references/
+    │   ├── design-principles.md
+    │   ├── layered-architecture.md
+    │   ├── testable-api.md
+    │   ├── testing-advanced.md
+    │   ├── rest-api-design.md
+    │   ├── code-quality.md
+    │   ├── classes-and-dataclasses.md
+    │   ├── function-design.md
+    │   ├── data-structures.md
+    │   ├── error-handling.md
+    │   ├── monadic-error-handling.md
+    │   ├── types-and-type-hints.md
+    │   ├── project-organization.md
+    │   ├── context-managers.md
+    │   ├── decorators.md
+    │   ├── async-patterns.md
+    │   ├── pydantic-validation.md
+    │   ├── pattern-matching.md
+    │   ├── grasp-principles.md
+    │   ├── domain-driven-design.md
+    │   ├── pythonic-patterns.md
+    │   └── patterns/          (25 pattern files)
+    │       ├── strategy.md
+    │       ├── registry.md
+    │       ├── command.md
+    │       ├── builder.md
+    │       ├── repository.md
+    │       ├── cqrs.md
+    │       └── ...
+    └── examples/
+        └── fastapi-hotel-api/
+            ├── main.py
+            ├── models/
+            ├── operations/
+            ├── routers/
+            └── db/
 ```
 
 ## Key Concepts
