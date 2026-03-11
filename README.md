@@ -70,7 +70,7 @@ The review checks:
 - **Architecture layers** — Three-layer separation, no layer skipping, router as composition root
 - **7 design principles** — Cohesion, coupling, abstractions, composition, creation/use, data-first, simplicity
 - **22 code quality rules** — Naming, nesting, types, error handling, imports, structure
-- **Pythonic patterns** — Strategy as Callable, Factory as dict mapping, Protocol over ABC
+- **Pythonic patterns** — All 25 patterns checked (Strategy as Callable, Factory as dict mapping, Protocol over ABC, etc.)
 
 Findings are reported by severity (Critical / Important / Suggestions) with file/line references and fix snippets.
 
