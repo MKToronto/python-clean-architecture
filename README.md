@@ -74,117 +74,94 @@ The review checks:
 
 Findings are reported by severity (Critical / Important / Suggestions) with file/line references and fix snippets.
 
-<details>
-<summary><strong>Example output</strong> (fictional bookstore-api)</summary>
+**Example output** (fictional `bookstore-api/`). See the [color-coded version](https://mktoronto.github.io/python-clean-architecture/) on the landing page.
 
-```
-/review-architecture bookstore-api/
-```
+```text
+$ /review-architecture bookstore-api/
 
-#### Architecture Summary
+Architecture Summary
+----------------------
 
-```
 Layers
-──────
+------
 API:        routers/books.py, routers/orders.py
 Logic:      services/book_service.py, services/order_service.py
 Database:   db/models.py, db/database.py
-Unclear:    utils/helpers.py (mixed concerns — formatting + DB queries)
+Unclear:    utils/helpers.py (mixed concerns)
 
 Dependency Flows
-────────────────
-routers/books.py → services/book_service.py → db/database.py       ✓
-routers/orders.py → db/models.py                                    ⚠ layer skip
-routers/orders.py → services/order_service.py → db/database.py     ✓
+----------------
+routers/books.py -> book_service.py -> db/database.py        [ok]
+routers/orders.py -> db/models.py                             [!] layer skip
+routers/orders.py -> order_service.py -> db/database.py       [ok]
 
-Layer Violations
-────────────────
-⚠ routers/orders.py imports db/models.py directly — should go through services
+What Works Well
+----------------
+[ok] Clean separation in routers/books.py -- never touches DB
+[ok] Good Pydantic model separation: BookCreate / Book
+[ok] book_service.py accepts data_interface -- proper DI
+
+Findings by Severity
+----------------------
+
+Critical
+
+1. Layer skip -- router imports DB directly
+   routers/orders.py:3
+   Principle: P3 Depend on Abstractions
+   Fix: Move DB access into services, pass DataInterface.
+
+   # Before
+   from db.models import OrderModel
+
+   @router.post("/orders")
+   def create_order(data: OrderCreate):
+       order = OrderModel(**data.dict())
+
+   # After
+   @router.post("/orders", status_code=201)
+   def create_order(data: OrderCreate):
+       return create_order_op(data, data_interface=db_interface)
+
+Important
+
+2. God class -- OrderService has 6 responsibilities
+   services/order_service.py:1 -- 280 lines
+   Principle: P1 High Cohesion
+   Fix: Extract PaymentService, InventoryService, NotificationService.
+
+3. Missing type hints
+   utils/helpers.py:12 -- def format_price(amount, currency):
+   Fix: def format_price(amount: Decimal, currency: str) -> str:
+
+Suggestions
+
+4. if/elif chain for discount logic
+   services/order_service.py:145
+   Pattern: Strategy -- Callable type alias
+
+   # Before
+   if discount_type == "percentage": ...
+   elif discount_type == "fixed": ...
+
+   # After
+   DiscountStrategy = Callable[[Decimal, int], Decimal]
+   DISCOUNTS: dict[str, DiscountStrategy] = {
+       "percentage": apply_percentage,
+       "fixed": apply_fixed,
+       "bogo": apply_bogo,
+   }
+   final_price = DISCOUNTS[discount_type](price, quantity)
+
+5. Bare string constants for order status
+   services/order_service.py:22
+   Fix: Use StrEnum
+
+   class OrderStatus(StrEnum):
+       PENDING = "pending"
+       SHIPPED = "shipped"
+       DELIVERED = "delivered"
 ```
-
-#### What Works Well
-
-- Clean separation in `routers/books.py` — calls service layer, never touches DB directly
-- Good use of Pydantic `BookCreate` / `Book` model separation in `models/book.py`
-- `book_service.py` accepts `data_interface` parameter — proper dependency injection
-
-#### Findings by Severity
-
-**Critical**
-
-**1. Layer skip — router imports DB directly**
-`routers/orders.py:3` — `from db.models import OrderModel`
-Principle: **P3 Depend on Abstractions**
-Fix: Move DB access into `services/order_service.py`, pass `DataInterface` from router.
-
-```python
-# Before (routers/orders.py)
-from db.models import OrderModel
-
-@router.post("/orders")
-def create_order(data: OrderCreate):
-    order = OrderModel(**data.dict())
-    db.session.add(order)
-    ...
-
-# After (routers/orders.py)
-@router.post("/orders", status_code=201)
-def create_order(data: OrderCreate):
-    return create_order_op(data, data_interface=db_interface)
-```
-
-**Important**
-
-**2. God class — `OrderService` has 6 responsibilities**
-`services/order_service.py:1` — 280 lines, handles orders, payments, inventory, notifications, discounts, and shipping.
-Principle: **P1 High Cohesion**
-Fix: Extract into `PaymentService`, `InventoryService`, `NotificationService`.
-
-**3. Missing type hints**
-`utils/helpers.py:12` — `def format_price(amount, currency):`
-Principle: **P7 Keep Things Simple** (type hints catch bugs early)
-Fix: `def format_price(amount: Decimal, currency: str) -> str:`
-
-**Suggestions**
-
-**4. if/elif chain for discount logic**
-`services/order_service.py:145`
-Pattern: **Strategy** — `Callable` type alias
-```python
-# Before
-if discount_type == "percentage":
-    ...
-elif discount_type == "fixed":
-    ...
-elif discount_type == "bogo":
-    ...
-
-# After
-DiscountStrategy = Callable[[Decimal, int], Decimal]
-
-DISCOUNTS: dict[str, DiscountStrategy] = {
-    "percentage": apply_percentage,
-    "fixed": apply_fixed,
-    "bogo": apply_bogo,
-}
-
-discount_fn = DISCOUNTS[discount_type]
-final_price = discount_fn(price, quantity)
-```
-
-**5. Bare string constants for order status**
-`services/order_service.py:22` — `status = "pending"`, `"shipped"`, `"delivered"`
-Fix: Use `StrEnum`
-```python
-class OrderStatus(StrEnum):
-    PENDING = "pending"
-    SHIPPED = "shipped"
-    DELIVERED = "delivered"
-```
-
-```
-
-</details>
 
 ### All Commands
 
