@@ -236,3 +236,7 @@ Each layer depends only on the layer below. The router is the composition root w
 - **Repository** — Protocol interface for CRUD, concrete implementations per storage backend
 - **Fluent Interface** — Methods return `self` for chaining, domain-specific verbs for readability
 - **Plugin Architecture** — Config-driven creation, `importlib` auto-discovery, self-registering modules
+
+## Also available for
+
+- **Codex CLI** — [python-clean-architecture-codex](https://github.com/MKToronto/python-clean-architecture-codex) (agent skill for Codex)
