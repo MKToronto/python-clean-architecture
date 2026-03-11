@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>python-clean-architecture — Claude Code Plugin</title>
+  <meta name="description" content="Claude Code plugin to scaffold, review, and refactor Python projects with clean code and architecture. 25 Pythonic design patterns and 7 design principles inspired by Arjan Codes.">
+  <meta name="keywords" content="Claude Code, Claude Code plugin, Python, clean architecture, FastAPI, design patterns, Pythonic, Arjan Codes, code review, dependency injection, Protocol">
+  <meta property="og:title" content="python-clean-architecture — Claude Code Plugin">
+  <meta property="og:description" content="Claude Code plugin to scaffold, review, and refactor Python projects with clean code and architecture. 25 Pythonic design patterns inspired by Arjan Codes.">
+  <meta property="og:url" content="https://github.com/MKToronto/python-clean-architecture">
+  <meta property="og:type" content="website">
+  <link rel="canonical" href="https://mktoronto.github.io/python-clean-architecture/">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a2e; background: #f8f9fa; }
+    .container { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1.1rem; color: #555; margin-bottom: 2rem; }
+    h2 { font-size: 1.3rem; margin: 2rem 0 0.75rem; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.3rem; }
+    p, li { margin-bottom: 0.5rem; }
+    ul { padding-left: 1.5rem; }
+    code { background: #e8e8e8; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.9rem; }
+    pre { background: #1a1a2e; color: #e0e0e0; padding: 1rem; border-radius: 6px; overflow-x: auto; margin: 1rem 0; }
+    pre code { background: none; padding: 0; color: inherit; }
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .badge { display: inline-block; background: #2563eb; color: #fff; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.85rem; margin-right: 0.3rem; margin-bottom: 0.3rem; }
+    .install { background: #f0f7ff; border: 1px solid #c0d8f0; border-radius: 6px; padding: 1rem 1.25rem; margin: 1rem 0; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 1rem; }
+    .card h3 { font-size: 1rem; margin-bottom: 0.4rem; }
+    .card p { font-size: 0.9rem; color: #555; margin: 0; }
+    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #e0e0e0; font-size: 0.85rem; color: #777; }
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>python-clean-architecture</h1>
+    <p class="subtitle">A Claude Code plugin to scaffold, review, and refactor Python/FastAPI projects with clean architecture.</p>
+
+    <span class="badge">Claude Code</span>
+    <span class="badge">Python</span>
+    <span class="badge">FastAPI</span>
+    <span class="badge">Clean Architecture</span>
+    <span class="badge">Design Patterns</span>
+
+    <h2>Install</h2>
+    <div class="install">
+      <pre><code>/plugin marketplace add MKToronto/python-clean-architecture
+/plugin install python-clean-architecture@python-clean-architecture</code></pre>
+      <p>Then restart Claude Code (<code>/exit</code> then <code>claude</code>).</p>
+    </div>
+
+    <h2>What It Does</h2>
+    <p>Provides principles-driven design guidance, 25 Pythonic design patterns, and three-layer FastAPI architecture scaffolding directly inside Claude Code. Inspired by <a href="https://www.arjancodes.com/">Arjan Codes</a>' methodology.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h3>7 Design Principles</h3>
+        <p>Cohesion, coupling, abstractions, composition, creation/use separation, data-first design, simplicity.</p>
+      </div>
+      <div class="card">
+        <h3>25 Pythonic Patterns</h3>
+        <p>Strategy, Registry, Pub/Sub, CQRS, Repository, Builder, Adapter, Facade, and more — all implemented the Pythonic way.</p>
+      </div>
+      <div class="card">
+        <h3>22 Code Quality Rules</h3>
+        <p>Naming, nesting, types, error handling, imports, structure — with a code review checklist.</p>
+      </div>
+      <div class="card">
+        <h3>Three-Layer Architecture</h3>
+        <p>Routers &rarr; Operations &rarr; Database with Protocol-based dependency injection.</p>
+      </div>
+    </div>
+
+    <h2>Slash Commands</h2>
+    <ul>
+      <li><code>/review-architecture</code> — Full architecture review (standard or in-depth)</li>
+      <li><code>/check-quality</code> — Quick check against 22 code quality rules</li>
+      <li><code>/suggest-patterns</code> — Recommend Pythonic design patterns</li>
+      <li><code>/scaffold-api</code> — Generate a new FastAPI project with clean architecture</li>
+      <li><code>/add-endpoint</code> — Scaffold a new endpoint across all three layers</li>
+      <li><code>/decouple</code> — Find tight coupling and suggest DI improvements</li>
+      <li><code>/make-pythonic</code> — Refactor to Pythonic patterns</li>
+      <li><code>/extract-god-class</code> — Find and split god classes</li>
+      <li><code>/scaffold-tests</code> — Generate stub-based tests</li>
+      <li><code>/diagnose-smells</code> — Detect code smells with fix suggestions</li>
+      <li><code>/review-api-design</code> — Review REST API conventions</li>
+      <li><code>/refactor-legacy</code> — Plan safe refactoring for untested code</li>
+    </ul>
+
+    <h2>Links</h2>
+    <ul>
+      <li><a href="https://github.com/MKToronto/python-clean-architecture">GitHub Repository</a></li>
+      <li><a href="https://github.com/MKToronto/python-clean-architecture-codex">Codex CLI version</a></li>
+      <li><a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code Documentation</a></li>
+    </ul>
+
+    <footer>
+      <p>Inspired by <a href="https://www.arjancodes.com/">arjancodes.com</a> | <a href="https://github.com/arjancodes">github.com/arjancodes</a> | <a href="https://www.youtube.com/arjancodes">youtube.com/arjancodes</a></p>
+      <p>MIT License &copy; MKToronto</p>
+    </footer>
+  </div>
+</body>
+</html>
