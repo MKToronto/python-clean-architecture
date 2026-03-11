@@ -8,7 +8,7 @@ version: 0.8.1
 
 Provide Clean Architecture guidance for Python projects, specifically FastAPI APIs. Based on seven core design principles, Pythonic implementations of classic patterns, and a three-layer architecture (Routers → Operations → Database).
 
-> **Attribution:** The principles, patterns, and architectural approach in this skill are inspired by and synthesized from [Arjan Codes](https://www.arjancodes.com/)' courses: *The Software Designer Mindset*, *Pythonic Patterns*, and *Complete Extension*. The specific Pythonic framing (Protocol-based DI, functional pattern progression, three-layer FastAPI architecture) originates from his teaching. This plugin distills those principles into actionable guidance for Claude Code — it is not a reproduction of course content.
+> **Attribution:** The principles, patterns, and architectural approach in this skill are inspired by and synthesized from [Arjan Codes](https://www.arjancodes.com/)' courses: *The Software Designer Mindset*, *Pythonic Patterns*, and *Complete Extension*. The specific Pythonic framing (Protocol-based DI, functional pattern progression, three-layer FastAPI architecture) originates from his teaching. This plugin distills those principles into actionable guidance for Claude Code — it is not a reproduction of course content. See also: [GitHub](https://github.com/arjancodes) | [YouTube](https://www.youtube.com/arjancodes).
 
 ## When to Apply
 
