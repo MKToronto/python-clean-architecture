@@ -1,6 +1,6 @@
-# python-clean-architecture
+# python-clean-architecture — Claude Code Plugin
 
-A Claude Code plugin that provides Clean Architecture guidance for Python/FastAPI projects.
+A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that provides Clean Architecture guidance for Python/FastAPI projects. Scaffold, review, and refactor Python projects with design principles and Pythonic patterns — directly inside Claude Code.
 
 ## Attribution
 

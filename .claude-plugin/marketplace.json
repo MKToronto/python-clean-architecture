@@ -4,7 +4,7 @@
     "name": "MKToronto"
   },
   "metadata": {
-    "description": "Scaffold, review, and refactor Python projects with clean code and architecture. Design principles and patterns implemented the Pythonic way."
+    "description": "Claude Code plugin to scaffold, review, and refactor Python projects with clean code and architecture. Design principles and patterns implemented the Pythonic way. Inspired by Arjan Codes."
   },
   "plugins": [
     {
@@ -17,7 +17,7 @@
       },
       "repository": "https://github.com/MKToronto/python-clean-architecture",
       "license": "MIT",
-      "keywords": ["python", "clean-architecture", "fastapi", "design-patterns", "code-review"],
+      "keywords": ["claude-code", "python", "clean-architecture", "fastapi", "design-patterns", "code-review", "arjan-codes"],
       "category": "architecture"
     }
   ]
